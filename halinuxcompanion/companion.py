@@ -49,7 +49,7 @@ class Companion:
     # TODO: Encryption requires https://github.com/jedisct1/libsodium
     supports_encryption: bool = False
     app_data: dict = {}
-    refresh_interval: int = 5  # TODO: change default to 15
+    refresh_interval: int = 15
     ip: str = ""
     port: int = 8400
     ha_url: str = "http://localhost:8123"

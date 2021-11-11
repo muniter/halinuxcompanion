@@ -21,7 +21,7 @@ Memory.unit_of_measurement = "%"
 
 def updater(self):
     data = psutil.virtual_memory()
-    self.state = round((data.total - data.available) / data.total * 100, 2)
+    self.state = round((data.total - data.available) / data.total * 100, 1)
     self.attributes["total"] = data.total / 1024
     self.attributes["available"] = data.available / 1024
     self.attributes["used"] = data.used / 1024
