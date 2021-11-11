@@ -1,0 +1,38 @@
+{
+  "ha_url": "http://localhost:8123",
+  "ha_token": "mysuperlongtoken",
+  "device_id": "computername",
+  "device_name": "whatever you want can be left empty",
+  "manufacturer": "whatever you want can be left empty",
+  "model": "Computer",
+  "computer_ip": "192.168.1.15",
+  "computer_port": 8400,
+  "refresh_interval": "15",
+  "sensors": {
+    "cpu": {
+      "enabled": true,
+      "name": "CPU",
+      "icon": "mdi:cpu-64-bit"
+    },
+    "memory": {
+      "enabled": true,
+      "name": "Memory Load",
+      "icon": "mdi:memory"
+    },
+    "uptime": {
+      "enabled": true,
+      "name": "Uptime",
+      "icon": "mdi:memory"
+    },
+    "status": {
+      "enabled": true,
+      "name": "CPU",
+      "icon": "mdi:memory"
+    }
+  },
+  "services": {
+    "notifications": {
+      "enabled": true
+    }
+  }
+}
