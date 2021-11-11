@@ -1,13 +1,23 @@
 import platform
 
+CONFIG_KEYS = [("ha_url", True), ("ha_token", True), ("device_id", True),
+               ("device_name", True), ("manufacturer", False),
+               ("model", False), ("computer_ip", True),
+               ("computer_port", True), ("refresh_interval", False)]
+
 
 class Companion:
     """Class encolsing a companion instance
     https://developers.home-assistant.io/docs/api/native-app-integration/setup
     """
     def __init__(self, config: dict):
-        for key, value in config.items():
-            setattr(self, key, value)
+        # Load only allowed values
+        for key, req in CONFIG_KEYS:
+            value = config.get(key, None)
+            if value is None and req:
+                raise ValueError(f"Missing required config key: {key}")
+            else:
+                setattr(self, key, value)
 
     def registration_payload(self) -> dict:
         return {
@@ -25,10 +35,6 @@ class Companion:
             "app_data": self.app_data,
         }
 
-    config_keys = [
-        "ha_url", "ha_token", "device_id", "device_name", "manufacturer",
-        "model", "computer_ip", "computer_port", "refresh_interval"
-    ]
     device_id: str = platform.node()
     # TODO: Get the default values from something that helps sets releases.
     app_name: str = "Linux Companion"
@@ -42,6 +48,7 @@ class Companion:
     # TODO: Encryption requires https://github.com/jedisct1/libsodium
     supports_encryption: bool = False
     app_data: dict = {}
+    refresh_interval: int = 5  # TODO: change default to 15
     ip: str = ""
     port: int = 8400
     ha_url: str = "http://localhost:8123"
