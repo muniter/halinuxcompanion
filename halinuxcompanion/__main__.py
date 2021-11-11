@@ -4,7 +4,8 @@ from halinuxcompanion.sensors.cpu import Cpu
 from halinuxcompanion.sensors.memory import Memory
 from halinuxcompanion.sensors.uptime import Uptime
 
-from time import sleep
+import asyncio
+import aiohttp
 import json
 import logging
 import argparse
@@ -23,8 +24,7 @@ def load_config(file="config.json") -> dict:
 
 
 def commandline() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Home Assistan Linux Companion")
+    parser = argparse.ArgumentParser(description="Home Assistan Linux Companion")
     parser.add_argument(
         "-c",
         "--config",
@@ -41,7 +41,7 @@ def commandline() -> argparse.Namespace:
     return args
 
 
-def main():
+async def main():
     args = commandline()
     logging.basicConfig(level="INFO")
     config = load_config(args.config)
@@ -54,17 +54,17 @@ def main():
         logger.setLevel(config["loglevel"])
 
     companion = Companion(config)
-    api = API(companion)
-    sensors = [Cpu, Memory, Uptime]
-    api.register_device()
-    [api.register_sensor(s) for s in sensors]
-    interval = companion.refresh_interval
-    # TODO: Catch network problems.
-    # TODO: Move to asyncronous requests
-    # TODO: Move to asyncronous loop
-    while True:
-        sleep(interval)
-        api.update_sensors(sensors)
+    async with aiohttp.ClientSession() as session:
+        api = API(companion, session)
+        sensors = [Cpu, Memory, Uptime]
+        await api.register_device()
+        await asyncio.gather(*[api.register_sensor(s) for s in sensors])
+        interval = companion.refresh_interval
+        # TODO: Catch network problems.
+        while True:
+            await asyncio.sleep(interval)
+            await api.update_sensors(sensors)
 
 
-main()
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
