@@ -12,9 +12,9 @@ Uptime.type = "sensor"
 Uptime.unique_id = "uptime"
 Uptime.unit_of_measurement = ""
 
+
 def updater(self):
     self.state = datetime.fromtimestamp(psutil.boot_time()).isoformat()
 
+
 Uptime.updater = MethodType(updater, Uptime)
-
-

@@ -1,5 +1,6 @@
 from typing import Union
 
+
 class Sensor:
     """Standard sensor class"""
     attributes: dict = {}
@@ -51,6 +52,7 @@ class Sensor:
             "type": self.type,
             "unique_id": self.unique_id,
         }
+
 
 class DeviceTracker:
     pass

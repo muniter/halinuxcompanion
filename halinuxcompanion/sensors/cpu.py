@@ -22,6 +22,7 @@ Cpu.type = "sensor"
 Cpu.unique_id = "cpu_load"
 Cpu.unit_of_measurement = "%"
 
+
 def updater(self):
     self.state = psutil.cpu_percent()
     if load_average:
@@ -29,5 +30,6 @@ def updater(self):
         self.attributes["load_1"] = data[0]
         self.attributes["load_5"] = data[1]
         self.attributes["load_15"] = data[2]
+
 
 Cpu.updater = MethodType(updater, Cpu)

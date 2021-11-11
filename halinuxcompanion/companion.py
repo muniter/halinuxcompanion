@@ -1,10 +1,11 @@
 import platform
 
+
 class Companion:
     """Class encolsing a companion instance
-    https://developers.home-assistant.io/docs/api/native-app-integration/setup"""
-
-    def __init__(self, config):
+    https://developers.home-assistant.io/docs/api/native-app-integration/setup
+    """
+    def __init__(self, config: dict):
         for key, value in config.items():
             setattr(self, key, value)
 
@@ -24,6 +25,10 @@ class Companion:
             "app_data": self.app_data,
         }
 
+    config_keys = [
+        "ha_url", "ha_token", "device_id", "device_name", "manufacturer",
+        "model", "computer_ip", "computer_port", "refresh_interval"
+    ]
     device_id: str = platform.node()
     # TODO: Get the default values from something that helps sets releases.
     app_name: str = "Linux Companion"
