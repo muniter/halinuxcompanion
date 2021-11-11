@@ -8,6 +8,7 @@
   "computer_ip": "192.168.1.15",
   "computer_port": 8400,
   "refresh_interval": "15",
+  "loglevel": "INFO",
   "sensors": {
     "cpu": {
       "enabled": true,

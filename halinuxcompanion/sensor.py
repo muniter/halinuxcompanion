@@ -33,7 +33,6 @@ class Sensor:
             "unit_of_measurement": self.unit_of_measurement,
             "state_class": self.state_class,
             "entity_category": self.entity_category,
-            "type": self.type
         }
         pop = []
         for key in data:

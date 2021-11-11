@@ -1,7 +1,7 @@
 import platform
 
 CONFIG_KEYS = [("ha_url", True), ("ha_token", True), ("device_id", True),
-               ("device_name", True), ("manufacturer", False),
+               ("device_name", False), ("manufacturer", False),
                ("model", False), ("computer_ip", True),
                ("computer_port", True), ("refresh_interval", False)]
 
@@ -17,7 +17,8 @@ class Companion:
             if value is None and req:
                 raise ValueError(f"Missing required config key: {key}")
             else:
-                setattr(self, key, value)
+                if value != "":
+                    setattr(self, key, value)
 
     def registration_payload(self) -> dict:
         return {

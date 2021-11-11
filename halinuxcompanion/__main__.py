@@ -9,16 +9,16 @@ import json
 import logging
 import argparse
 # set logging level using and environment variable
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("halinuxcompanion")
 
 
 def load_config(file="config.json") -> dict:
+    logger.info(f"Reading configuration file {file}")
     try:
         with open(file, "r") as f:
             return json.load(f)
     except FileNotFoundError:
-        logger.error("Config file not found " + file)
+        logger.error(f"Config file not found {file}")
         exit(1)
 
 
@@ -35,7 +35,7 @@ def commandline() -> argparse.Namespace:
         "-l",
         "--loglevel",
         help="Log level",
-        default="INFO",
+        default="",
     )
     args = parser.parse_args()
     return args
@@ -43,15 +43,25 @@ def commandline() -> argparse.Namespace:
 
 def main():
     args = commandline()
-    logger.setLevel(args.loglevel)
-    logger.info("Reading configuration file")
-    config = load_config()
+    logging.basicConfig(level="INFO")
+    config = load_config(args.config)
+
+    # Command line loglevel takes precedence
+    global logger
+    if args.loglevel != "":
+        logger.setLevel(args.loglevel)
+    elif "loglevel" in config:
+        logger.setLevel(config["loglevel"])
+
     companion = Companion(config)
     api = API(companion)
     sensors = [Cpu, Memory, Uptime]
     api.register_device()
     [api.register_sensor(s) for s in sensors]
     interval = companion.refresh_interval
+    # TODO: Catch network problems.
+    # TODO: Move to asyncronous requests
+    # TODO: Move to asyncronous loop
     while True:
         sleep(interval)
         api.update_sensors(sensors)
