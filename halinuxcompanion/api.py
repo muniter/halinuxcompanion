@@ -37,25 +37,26 @@ class API:
         self.register_payload = companion.registration_payload()
 
     async def webhook_request(self, type: str, data: str) -> aiohttp.ClientResponse:
-        logger.debug(f'Sending request {self.counter} to {self.webhook_url} json:{data}')
-        logger.info(f'Sending webhook request {self.counter} type:{type}')
+
+        logger.debug('Sending request %s json:%s', self.webhook_url, data)
+        logger.info('Sending webhook request %s type:%s', self.counter, type)
 
         async with self.session.post(self.webhook_url, data=data) as res:
-            logger.info(f'Recived response {res.status} to request {self.counter}')
+            logger.info('Recived response %s to request %s', res.status, self.counter)
             self.counter += 1
 
             if logger.level == logging.DEBUG:
                 if res.status == SC_INVALID_JSON:
-                    logger.error(f'Invalid JSON {self.webhook_url}')
+                    logger.error('Invalid JSON %s', self.webhook_url)
                 if res.status == SC_MOBILE_COMPONENT_NOT_LOADED:
-                    logger.error(f'The mobile_app component has not ben loaded {self.webhook_url}')
+                    logger.error('The mobile_app component has not ben loaded %s', self.webhook_url)
                 elif res.status == SC_INTEGRATION_DELETED:
-                    logger.error(f'The integration has been deleted, need to register again {self.webhook_url}')
+                    logger.error('The integration has been deleted, need to register again %s', self.webhook_url)
 
             return res
 
     async def register_device(self):
-        logger.info(f'Registering companion device with payload:{self.register_payload}')
+        logger.info('Registering companion device with payload:%s', self.register_payload)
         async with self.session.post(self.instance_url + '/api/mobile_app/registrations',
                                      headers=self.headers,
                                      data=json.dumps(self.register_payload)) as res:
@@ -69,37 +70,37 @@ class API:
                 self.webhook_id = data['webhook_id']
                 self.webhook_url = self.instance_url + '/api/webhook/' + self.webhook_id
                 logger.info('Registration successful, received the neccesarry data from the server')
-                logger.debug(f'Registration data received {data}')
+                logger.debug('Registration data received %s', data)
                 return True
             else:
-                logger.error(f'Registration failed with status code {res.status}')
+                logger.error('Registration failed with status code %s', res.status)
                 return False
 
     async def register_sensor(self, sensor: Sensor):
         data = {"data": sensor.register(), "type": "register_sensor"}
         sid = sensor.unique_id
         data = json.dumps(data)
-        logger.info(f'Registering sensor:{sid} payload:{data}')
+        logger.info('Registering sensor:%s payload:{data}', sid)
         res = await self.webhook_request('register_sensor', data=data)
 
         if res.ok or res.status == SC_REGISTER_SENSOR:
-            logger.info(f'Sensor registration successful: {sid}')
+            logger.info('Sensor registration successful: %s', sid)
             # Seems like home assistant needs and update after registering a sensor
             # to reflect the value of the sensor state.
             return True
         else:
-            logger.error(f'Sensor registration failed with status code:{res.status} sensor:{sid}')
+            logger.error('Sensor registration failed with status code:%s sensor:{sid}', res.status)
             return False
 
     async def update_sensors(self, sensors: List[Sensor]):
         data = {"type": "update_sensor_states", "data": [sensor.update() for sensor in sensors]}
         sids = [sensor.unique_id for sensor in sensors]
-        logger.info(f'Updating sensors with id:{sids}')
+        logger.info('Updating sensors with id:%s', sids)
         res = await self.webhook_request('register_sensor', data=json.dumps(data))
 
         if res.ok or res.status == SC_REGISTER_SENSOR:
-            logger.info(f'Sensor update successful: {sids}')
+            logger.info('Sensor update successful: %s', sids)
             return True
         else:
-            logger.error(f'Sensor update failed with status code:{res.status} sensors:{sids}')
+            logger.error('Sensor update failed with status code:%s sensors:{sids}', res.status)
             return False

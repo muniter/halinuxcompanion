@@ -14,12 +14,12 @@ logger = logging.getLogger("halinuxcompanion")
 
 
 def load_config(file="config.json") -> dict:
-    logger.info(f"Reading configuration file {file}")
+    logger.info("Reading configuration file %s", file)
     try:
         with open(file, "r") as f:
             return json.load(f)
     except FileNotFoundError:
-        logger.error(f"Config file not found {file}")
+        logger.error("Config file not found %s", file)
         exit(1)
 
 
