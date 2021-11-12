@@ -80,7 +80,7 @@ class API:
         data = {"data": sensor.register(), "type": "register_sensor"}
         sid = sensor.unique_id
         data = json.dumps(data)
-        logger.info('Registering sensor:%s payload:{data}', sid)
+        logger.info('Registering sensor:%s payload:%s', sid, data)
         res = await self.webhook_request('register_sensor', data=data)
 
         if res.ok or res.status == SC_REGISTER_SENSOR:
@@ -89,7 +89,7 @@ class API:
             # to reflect the value of the sensor state.
             return True
         else:
-            logger.error('Sensor registration failed with status code:%s sensor:{sid}', res.status)
+            logger.error('Sensor registration failed with status code:%s sensor:%s', res.status, sid)
             return False
 
     async def update_sensors(self, sensors: List[Sensor]):
@@ -102,5 +102,5 @@ class API:
             logger.info('Sensor update successful: %s', sids)
             return True
         else:
-            logger.error('Sensor update failed with status code:%s sensors:{sids}', res.status)
+            logger.error('Sensor update failed with status code:%s sensors:%s', res.status, sids)
             return False
