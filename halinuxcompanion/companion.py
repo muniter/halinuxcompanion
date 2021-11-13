@@ -1,9 +1,8 @@
 import platform
 
-CONFIG_KEYS = [("ha_url", True), ("ha_token", True), ("device_id", True),
-               ("device_name", False), ("manufacturer", False),
-               ("model", False), ("computer_ip", True),
-               ("computer_port", True), ("refresh_interval", False)]
+CONFIG_KEYS = [("ha_url", True), ("ha_token", True), ("device_id", True), ("device_name", False),
+               ("manufacturer", False), ("model", False), ("computer_ip", True), ("computer_port", True),
+               ("refresh_interval", False), ("services", True)]
 
 
 class Companion:
@@ -17,8 +16,20 @@ class Companion:
             if value is None and req:
                 raise ValueError(f"Missing required config key: {key}")
             else:
+                # Set only for none empty values
                 if value != "":
                     setattr(self, key, value)
+
+            # Enable notificaions
+            try:
+                if config["services"]["notifications"]["enabled"] is True:
+                    self.notifications_enabled = True
+                    self.app_data = {
+                        "push_token": "mytoken",
+                        "push_url": f"http://{self.computer_ip}:{self.computer_port}/notify",
+                    }
+            except KeyError:
+                pass
 
     def registration_payload(self) -> dict:
         return {
@@ -49,8 +60,9 @@ class Companion:
     # TODO: Encryption requires https://github.com/jedisct1/libsodium
     supports_encryption: bool = False
     app_data: dict = {}
+    notify_enabled: bool = False
     refresh_interval: int = 15
-    ip: str = ""
-    port: int = 8400
+    computer_ip: str = ""
+    computer_port: int = 8400
     ha_url: str = "http://localhost:8123"
     ha_token: str

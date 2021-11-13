@@ -61,6 +61,7 @@ Application to run on linux desktop computer to provide sensors data to homeasss
 ## Todo
 
 - [**Implement encryption**](https://developers.home-assistant.io/docs/api/native-app-integration/sending-data)
-- [**Native notifications**](https://developers.home-assistant.io/docs/api/native-app-integration/notifications)
+- [**Native notifications**](https://developers.home-assistant.io/docs/api/native-app-integration/notifications)  
+  WIP: So far notifications are emitted and callbacks received on action but nothihg is done with those so far.
 - **Move sensors to MQTT**  
   The reasoning for the change is the limitations of the API, naturally is expected that desktop and laptops would go offline and I would like for the sensors to reflect this new state. But if for some reason the application is unable to send this new state to Home Assistant the values of the sensors would be stuck. But if the app uses MQTT it can set will topics for the sensors to be updated when the client can't communicate with the server.

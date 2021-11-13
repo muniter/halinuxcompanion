@@ -2,8 +2,9 @@ from .companion import Companion
 from .sensor import Sensor
 
 import aiohttp
+from aiohttp import web
 import json
-from typing import List
+from typing import List, Union
 import logging
 
 logger = logging.getLogger(__name__)
@@ -13,9 +14,11 @@ SC_REGISTER_SENSOR = 301
 SC_INVALID_JSON = 400
 SC_MOBILE_COMPONENT_NOT_LOADED = 404
 SC_INTEGRATION_DELETED = 410
+SESSION: Union[aiohttp.ClientSession, None] = None
 
 
 class API:
+    """Class that handles Home Assisntat HTTP API calls"""
     instance_url: str
     token: str
     headers: dict
@@ -29,8 +32,11 @@ class API:
     counter: int = 0
     session: aiohttp.ClientSession
 
-    def __init__(self, companion: Companion, session: aiohttp.ClientSession):
-        self.session = session
+    def __init__(self, companion: Companion):
+        global SESSION
+        if SESSION is None:
+            SESSION = aiohttp.ClientSession()
+        self.session = SESSION
         self.token = companion.ha_token
         self.headers = {'Authorization': 'Bearer ' + self.token}
         self.instance_url = companion.ha_url
@@ -104,3 +110,23 @@ class API:
         else:
             logger.error('Sensor update failed with status code:%s sensors:%s', res.status, sids)
             return False
+
+
+class Server:
+    """Class that runs an http server and handles requests in the route /notify"""
+    app: web.Application
+    host: str
+    port: int
+
+    def __init__(self, companion: Companion):
+        self.app = web.Application()
+        self.host = companion.computer_ip
+        self.port = companion.computer_port
+
+    async def start(self):
+        logger.info('Starting http server on %s:%s', self.host, self.port)
+        runner = web.AppRunner(self.app)
+        await runner.setup()
+        site = web.TCPSite(runner, self.host, self.port)
+        await site.start()
+        logger.info('Server started on %s:%s', self.host, self.port)

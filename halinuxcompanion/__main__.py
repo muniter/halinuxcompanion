@@ -1,4 +1,6 @@
-from halinuxcompanion.api import API
+from halinuxcompanion.api import API, Server
+from halinuxcompanion.dbus import init_bus
+from halinuxcompanion.notifier import Notifier
 from halinuxcompanion.companion import Companion
 from halinuxcompanion.sensors.cpu import Cpu
 from halinuxcompanion.sensors.memory import Memory
@@ -47,23 +49,29 @@ async def main():
     config = load_config(args.config)
 
     # Command line loglevel takes precedence
-    global logger
     if args.loglevel != "":
         logger.setLevel(args.loglevel)
     elif "loglevel" in config:
         logger.setLevel(config["loglevel"])
 
     companion = Companion(config)
-    async with aiohttp.ClientSession() as session:
-        api = API(companion, session)
-        sensors = [Cpu, Memory, Uptime]
-        await api.register_device()
-        await asyncio.gather(*[api.register_sensor(s) for s in sensors])
-        interval = companion.refresh_interval
-        # TODO: Catch network problems.
-        while True:
-            await asyncio.sleep(interval)
-            await api.update_sensors(sensors)
+    api = API(companion)  # API client to send data to Home Assistant
+    server = Server(companion)  # HTTP server that handles notifications
+    sensors = [Cpu, Memory, Uptime]  # Sensors to send to Home Assistant
+    bus = await init_bus()  # DBus client to send desktop notifications and listen to signals
+    notifier = Notifier()  # Notifier that handles from server and sends to bus
+
+    await api.register_device()
+    await asyncio.gather(*[api.register_sensor(s) for s in sensors])
+    # This might also fit in gather as taks
+    await notifier.init(bus, server)
+    await server.start()
+
+    interval = companion.refresh_interval
+    # TODO: Catch network problems.
+    while True:
+        await asyncio.sleep(interval)
+        await api.update_sensors(sensors)
 
 
 loop = asyncio.get_event_loop()
