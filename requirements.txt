@@ -1,2 +1,3 @@
 aiohttp==3.8.0
 psutil==5.8.0
+dbus-next==0.2.3
