@@ -58,13 +58,15 @@ async def main():
     api = API(companion)  # API client to send data to Home Assistant
     server = Server(companion)  # HTTP server that handles notifications
     sensors = [Cpu, Memory, Uptime]  # Sensors to send to Home Assistant
-    bus = await init_bus()  # DBus client to send desktop notifications and listen to signals
-    notifier = Notifier()  # Notifier that handles from server and sends to bus
+
+    if companion.notifier:
+        bus = await init_bus()  # DBus client to send desktop notifications and listen to signals
+        notifier = Notifier()  # Notifier that handles from server and sends to bus
+        await notifier.init(bus, server)
 
     await api.register_device()
     await asyncio.gather(*[api.register_sensor(s) for s in sensors])
     # This might also fit in gather as taks
-    await notifier.init(bus, server)
     await server.start()
 
     interval = companion.refresh_interval

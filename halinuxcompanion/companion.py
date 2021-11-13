@@ -23,7 +23,7 @@ class Companion:
             # Enable notificaions
             try:
                 if config["services"]["notifications"]["enabled"] is True:
-                    self.notifications_enabled = True
+                    self.notifier = True
                     self.app_data = {
                         "push_token": "mytoken",
                         "push_url": f"http://{self.computer_ip}:{self.computer_port}/notify",
@@ -60,7 +60,7 @@ class Companion:
     # TODO: Encryption requires https://github.com/jedisct1/libsodium
     supports_encryption: bool = False
     app_data: dict = {}
-    notify_enabled: bool = False
+    notifier: bool = False
     refresh_interval: int = 15
     computer_ip: str = ""
     computer_port: int = 8400
