@@ -6,7 +6,7 @@ Application to run on linux desktop computer to provide sensors data to homeasss
 
 1. [Get a long lived access token from your homeasssistant user](https://www.atomicha.com/home-assistant-how-to-generate-long-lived-access-token-part-1/)
 1. Install requirements `pip3 install -r requirements.txt`
-1. Fill `config.json`, the example data is provided in `config-sample.json`.
+1. Modify `config.json` to match your setup and desired options.
 1. Run the application `python3 -m halinuxcompanion --config config.json`
 
 ## Example configuration file
