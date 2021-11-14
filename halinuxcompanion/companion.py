@@ -47,6 +47,7 @@ class Companion:
             "app_data": self.app_data,
         }
 
+    # TODO: Revisit this device_id which must be unique, used for notification events
     device_id: str = platform.node()
     # TODO: Get the default values from something that helps sets releases.
     app_name: str = "Linux Companion"

@@ -42,7 +42,7 @@ class API:
         self.instance_url = companion.ha_url
         self.register_payload = companion.registration_payload()
 
-    async def webhook_request(self, type: str, data: str) -> aiohttp.ClientResponse:
+    async def webhook_post(self, type: str, data: str) -> aiohttp.ClientResponse:
 
         logger.debug('Sending request %s json:%s', self.webhook_url, data)
         logger.info('Sending webhook request %s type:%s', self.counter, type)
@@ -61,33 +61,38 @@ class API:
 
             return res
 
-    async def register_device(self):
-        logger.info('Registering companion device with payload:%s', self.register_payload)
-        async with self.session.post(self.instance_url + '/api/mobile_app/registrations',
-                                     headers=self.headers,
-                                     data=json.dumps(self.register_payload)) as res:
+    async def post(self, endpoint, data) -> aiohttp.ClientResponse:
+        return await self.session.post(self.instance_url + endpoint, headers=self.headers, data=data)
 
-            if res.ok:
-                data = await res.json()
-                self.cloudhook_url = data.get('cloudhook_url', None)
-                self.remote_ui_url = data.get('remote_ui_url', None)
-                # Both should error if not present
-                self.secret = data['secret']
-                self.webhook_id = data['webhook_id']
-                self.webhook_url = self.instance_url + '/api/webhook/' + self.webhook_id
-                logger.info('Registration successful, received the neccesarry data from the server')
-                logger.debug('Registration data received %s', data)
-                return True
-            else:
-                logger.error('Registration failed with status code %s', res.status)
-                return False
+    async def get(self, endpoint) -> aiohttp.ClientResponse:
+        return await self.session.get(self.instance_url + endpoint, headers=self.headers)
+
+    async def register_device(self):
+        register_data = json.dumps(self.register_payload)
+        logger.info('Registering companion device with payload:%s', register_data)
+        res = await self.post('/api/mobile_app/registrations', data=register_data)
+
+        if res.ok:
+            data = await res.json()
+            self.cloudhook_url = data.get('cloudhook_url', None)
+            self.remote_ui_url = data.get('remote_ui_url', None)
+            # Both should error if not present
+            self.secret = data['secret']
+            self.webhook_id = data['webhook_id']
+            self.webhook_url = self.instance_url + '/api/webhook/' + self.webhook_id
+            logger.info('Registration successful, received the neccesarry data from the server')
+            logger.debug('Registration data received %s', data)
+            return True
+        else:
+            logger.error('Registration failed with status code %s', res.status)
+            exit(1)  # TODO: Should not exit but try reconnecting
 
     async def register_sensor(self, sensor: Sensor):
         data = {"data": sensor.register(), "type": "register_sensor"}
         sid = sensor.unique_id
         data = json.dumps(data)
         logger.info('Registering sensor:%s payload:%s', sid, data)
-        res = await self.webhook_request('register_sensor', data=data)
+        res = await self.webhook_post('register_sensor', data=data)
 
         if res.ok or res.status == SC_REGISTER_SENSOR:
             logger.info('Sensor registration successful: %s', sid)
@@ -102,7 +107,7 @@ class API:
         data = {"type": "update_sensor_states", "data": [sensor.update() for sensor in sensors]}
         sids = [sensor.unique_id for sensor in sensors]
         logger.info('Updating sensors with id:%s', sids)
-        res = await self.webhook_request('register_sensor', data=json.dumps(data))
+        res = await self.webhook_post('register_sensor', data=json.dumps(data))
 
         if res.ok or res.status == SC_REGISTER_SENSOR:
             logger.info('Sensor update successful: %s', sids)
