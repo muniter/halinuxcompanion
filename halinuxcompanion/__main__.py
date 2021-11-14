@@ -21,7 +21,7 @@ def load_config(file="config.json") -> dict:
         with open(file, "r") as f:
             return json.load(f)
     except FileNotFoundError:
-        logger.error("Config file not found %s", file)
+        logger.critical("Config file not found %s, exiting now", file)
         exit(1)
 
 
@@ -64,6 +64,7 @@ async def main():
         notifier = Notifier()  # Notifier that handles from server and sends to bus
         await notifier.init(bus, server)
 
+    # TODO: What happens if home assistant is not running? (It crashes)
     await api.register_device()
     await asyncio.gather(*[api.register_sensor(s) for s in sensors])
     # This might also fit in gather as taks
