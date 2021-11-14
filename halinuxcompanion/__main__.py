@@ -62,7 +62,7 @@ async def main():
     if companion.notifier:
         bus = await init_bus()  # DBus client to send desktop notifications and listen to signals
         notifier = Notifier()  # Notifier that handles from server and sends to bus
-        await notifier.init(bus, server)
+        await notifier.init(bus, api, server, companion.device_id)
 
     # TODO: What happens if home assistant is not running? (It crashes)
     await api.register_device()
