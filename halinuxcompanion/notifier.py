@@ -44,7 +44,7 @@ class Notifier:
     6. When dbus events are generated, it emits the event to Home Assistant.
     """
     history: Dict[int, dict] = {}  # Keeps a history of notifications
-    tagtoid: Dict[int, str] = {}  # Lookup id from tag
+    tagtoid: Dict[str, int] = {}  # Lookup id from tag
     interface: ProxyInterface
     api: API
     push_token: str
@@ -212,13 +212,13 @@ class Notifier:
 
         # Store in the history
         self.history[id] = notification
-        tag = notification["data"].get("tag", None)
+        tag: str = notification["data"].get("tag", None)
         if tag:
             self.tagtoid[tag] = id
 
         logger.info("Dbus notification dispatched id:%s", id)
 
-    async def on_action(self, id, action) -> None:
+    async def on_action(self, id: int, action: str) -> None:
         """Function to handle the dbus notification action event
         If a notifications is found, and the action is not the default action, an event is triggered to home assistant.
         (This is how the android app handles actions).
@@ -228,12 +228,13 @@ class Notifier:
         :return: None
         """
         logger.info("Notification action dbus event received: id:%s, action:%s", id, action)
-        notification = self.history.get(id, {})
-        actions = notification.get("actions", [])
+        notification: dict = self.history.get(id, {})
+        actions: List[dict] = notification["data"].get("actions", {})
         uri: str
         if notification and actions:
             emit_event: bool = True
-            uri = actions[actions.index(action) + 1]
+            # actions is a list of dictionaries {"action": "action_name", "title": "Action Name", "uri": "uri"}
+            uri = next(filter(lambda dic: dic["action"] == action, actions)).get("uri", "")
             if action == "default":
                 uri = notification.get("default_action_uri", "")
                 emit_event = False
@@ -245,7 +246,7 @@ class Notifier:
             if emit_event:
                 asyncio.create_task(self.ha_event_trigger("action", action, notification))
 
-    async def on_close(self, id, reason) -> None:
+    async def on_close(self, id: int, reason: str) -> None:
         """Function to handle the dbus notification close event
         Sends the data to ha_event_trigger, where the event is created and sent to Home Assistant.
 
