@@ -234,10 +234,11 @@ class Notifier:
         if notification and actions:
             emit_event: bool = True
             # actions is a list of dictionaries {"action": "action_name", "title": "Action Name", "uri": "uri"}
-            uri = next(filter(lambda dic: dic["action"] == action, actions)).get("uri", "")
             if action == "default":
                 uri = notification.get("default_action_uri", "")
                 emit_event = False
+            else:
+                uri = next(filter(lambda dic: dic["action"] == action, actions)).get("uri", "")
 
             if uri.startswith("http") and self.url_program != "":
                 asyncio.create_task(asyncio.create_subprocess_exec(self.url_program, uri))
