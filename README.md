@@ -11,7 +11,7 @@ Application to run on linux desktop computer to provide sensors data to homeasss
 
 Now in your homeasssistant you will see a new device in th-**"mobile_app"** integration, and there will be a new service to notify your linux desktop. Notification actions work and the expected events will be fired in Home Assistant.
 
-## Example configuration file
+## [Example configuration file](/config.json)
 
 ```json
 {
@@ -50,6 +50,10 @@ Now in your homeasssistant you will see a new device in th-**"mobile_app"** inte
   "services": {
     "notifications": {
       "enabled": true
+    },
+    "url_handler": {
+      "enabled": true,
+      "program": "xdg-open"
     }
   }
 }
@@ -81,6 +85,7 @@ Now in your homeasssistant you will see a new device in th-**"mobile_app"** inte
   - Uptime
 - Notifications:
   - Actions Callback (Triggers event in Home Assistant)
+  - Actions Locally (If action contains)
   - Closing/Removing/Dismissing Callback (Triggers event in Home Assistant)
   - Timeout
   - Commands **TODO**
