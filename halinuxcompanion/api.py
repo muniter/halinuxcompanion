@@ -30,6 +30,7 @@ class API:
     webhook_id: str
     webhook_url: str
     counter: int = 0
+    update_counter: int = 0
     session: aiohttp.ClientSession
 
     def __init__(self, companion: Companion):
@@ -44,11 +45,10 @@ class API:
 
     async def webhook_post(self, type: str, data: str) -> aiohttp.ClientResponse:
 
-        logger.debug('Sending request %s json:%s', self.webhook_url, data)
-        logger.info('Sending webhook request %s type:%s', self.counter, type)
+        logger.debug('Sending webhook POST %s type:%s ', self.counter, type)
 
         async with self.session.post(self.webhook_url, data=data) as res:
-            logger.info('Recived response %s to request %s', res.status, self.counter)
+            logger.debug('Recived response %s to request %s', res.status, self.counter)
             self.counter += 1
 
             if logger.level == logging.DEBUG:
@@ -61,10 +61,23 @@ class API:
 
             return res
 
-    async def post(self, endpoint, data) -> aiohttp.ClientResponse:
+    async def post(self, endpoint: str, data: str) -> aiohttp.ClientResponse:
+        """Send a POST request to the given Home Assisntat endpoint
+        Headers are set to the token and the body is set to the data
+
+        :param endpoint: The endpoint to send the request to (must have a leading /)
+        :param data: The data to send in the body of the request (json serialized)
+        :return: The response from Home Assisntat
+        """
         return await self.session.post(self.instance_url + endpoint, headers=self.headers, data=data)
 
     async def get(self, endpoint) -> aiohttp.ClientResponse:
+        """Send a GET request to the given Home Assisntat endpoint
+        Headers are set to the token and the body is set to the data
+
+        :param endpoint: The endpoint to send the request to (must have a leading /)
+        :return: The response from Home Assisntat
+        """
         return await self.session.get(self.instance_url + endpoint, headers=self.headers)
 
     async def register_device(self):
@@ -81,7 +94,6 @@ class API:
             self.webhook_id = data['webhook_id']
             self.webhook_url = self.instance_url + '/api/webhook/' + self.webhook_id
             logger.info('Registration successful, received the neccesarry data from the server')
-            logger.debug('Registration data received %s', data)
             return True
         else:
             logger.error('Registration failed with status code %s', res.status)
@@ -96,24 +108,23 @@ class API:
 
         if res.ok or res.status == SC_REGISTER_SENSOR:
             logger.info('Sensor registration successful: %s', sid)
-            # Seems like home assistant needs and update after registering a sensor
-            # to reflect the value of the sensor state.
             return True
         else:
             logger.error('Sensor registration failed with status code:%s sensor:%s', res.status, sid)
             return False
 
     async def update_sensors(self, sensors: List[Sensor]):
+        self.update_counter += 1
         data = {"type": "update_sensor_states", "data": [sensor.update() for sensor in sensors]}
         sids = [sensor.unique_id for sensor in sensors]
-        logger.info('Updating sensors with id:%s', sids)
+        logger.info('Sensors update %s with sensors: %s', self.update_counter, sids)
         res = await self.webhook_post('register_sensor', data=json.dumps(data))
 
         if res.ok or res.status == SC_REGISTER_SENSOR:
-            logger.info('Sensor update successful: %s', sids)
+            logger.info('Sensors update %s successful', self.update_counter)
             return True
         else:
-            logger.error('Sensor update failed with status code:%s sensors:%s', res.status, sids)
+            logger.error('Sensors update %s failed with status code:%s', self.update_counter, res.status)
             return False
 
 

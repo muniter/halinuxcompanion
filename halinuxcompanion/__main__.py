@@ -62,19 +62,18 @@ async def main():
     if companion.notifier:
         bus = await init_bus()  # DBus client to send desktop notifications and listen to signals
         notifier = Notifier()  # Notifier that handles from server and sends to bus
-        await notifier.init(bus, api, server, companion.device_id)
+        await notifier.init(bus, api, server, companion.app_data["push_token"])
+        await server.start()
 
     # TODO: What happens if home assistant is not running? (It crashes)
     await api.register_device()
     await asyncio.gather(*[api.register_sensor(s) for s in sensors])
-    # This might also fit in gather as taks
-    await server.start()
+    await api.update_sensors(sensors)  # Send initial data to Home Assistant (again, needed)
 
     interval = companion.refresh_interval
     # TODO: Catch network problems.
     while True:
         await asyncio.sleep(interval)
-        await api.update_sensors(sensors)
 
 
 loop = asyncio.get_event_loop()

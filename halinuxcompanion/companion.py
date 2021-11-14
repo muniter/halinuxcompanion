@@ -1,4 +1,5 @@
 import platform
+import uuid
 
 CONFIG_KEYS = [("ha_url", True), ("ha_token", True), ("device_id", True), ("device_name", False),
                ("manufacturer", False), ("model", False), ("computer_ip", True), ("computer_port", True),
@@ -25,7 +26,7 @@ class Companion:
                 if config["services"]["notifications"]["enabled"] is True:
                     self.notifier = True
                     self.app_data = {
-                        "push_token": "mytoken",
+                        "push_token": str(uuid.uuid1()), # TODO: Random generation
                         "push_url": f"http://{self.computer_ip}:{self.computer_port}/notify",
                     }
             except KeyError:

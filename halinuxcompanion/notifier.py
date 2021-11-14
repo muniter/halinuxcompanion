@@ -5,7 +5,7 @@ from aiohttp.web import Response
 from dbus_next.aio import ProxyInterface
 from dbus_next.signature import Variant
 from importlib.resources import path as resource_path
-from typing import Dict, List
+from typing import Coroutine, Dict, List
 import json
 import logging
 
@@ -28,94 +28,94 @@ NOTIFY_LEVELS = {
     "max": URGENCY_CRITICAL,
 }
 
+EVENTS_ENPOINT = {
+    "closed": "/api/events/mobile_app_notification_cleared",
+    "action": "/api/events/mobile_app_notification_action",
+}
+
 
 class Notifier:
-    """Class to handle notifications"""
+    """Class that handles the lifetime of notifications
+    1. It receives a notification by registering a handler to the web server spawned by the application.
+    2. It transforms the notification to the format dbus uses.
+    3. It sets up the proxy object to send dbus notifications, and listen to events related to this notifications.
+    4. It sends the notification to dbus.s
+    5. Listens to the dbus events related to this notification.
+    6. When dbus events are generated, it emits the event to Home Assistant.
+    """
     history: Dict[int, dict] = {}  # Keeps a history of notifications
     tagtoid: Dict[int, str] = {}  # Lookup id from tag
     interface: ProxyInterface
     api: API
-    device_id: str
+    push_token: str
 
     def __init__(self):
         pass
 
-    async def init(self, bus, api, webserverver, device_id):
+    async def init(self, bus, api, webserverver, push_token) -> None:
         """Function to initialize the notifier.
         1. Handles creating the ProxyInterface to send notifications and listen to events.
         2. Registers an http handler to the webserver for Home Assistant notifications.
         3. Register callbacks for dbus events (on_action_invoked and on_notification_closed).
         4. Keeps a reference to the API for firing events in Home Assistant.
-        5. Sets the device id for notification calls.
+        5. Sets the push_token used to check if the notification is for this device.
         """
         interface = 'org.freedesktop.Notifications'
         path = '/org/freedesktop/Notifications'
         introspection = await bus.introspect(interface, path)
         proxy = bus.get_proxy_object(interface, path, introspection)
         self.interface = proxy.get_interface(interface)
+
         # Setup dbus callbacks
         self.interface.on_action_invoked(self.on_action)
         self.interface.on_notification_closed(self.on_close)
+
         # Setup http server route handler for incoming notifications
         webserverver.app.router.add_route('POST', '/notify', self.on_ha_notification)
-        # API and Companion reference
+
+        # API and necessary data
         self.api = api
-        self.device_id = device_id
+        self.push_token = push_token
 
-    async def dbus_notify(self, notification: dict):
-        """Function to send a native dbus notification.
-        According to the following link:
-            Section  org.freedesktop.Notifications.Notify
-            https://people.gnome.org/~mccann/docs/notification-spec/notification-spec-latest.html#protocol
-        """
-        id = await self.interface.call_notify(APP_NAME, notification["replace_id"], notification["icon"],
-                                              notification["title"], notification["message"], notification["actions"],
-                                              notification["hints"], notification["timeout"])
-
-        # Store in the history
-        self.history[id] = notification
-        tag = notification["data"].get("tag", None)
-        if tag:
-            self.tagtoid[tag] = id
-
-        logger.info("Dbus notification dispatched id:%s", id)
-
+    # Entrypoint to the Class logic
     async def on_ha_notification(self, request) -> Response:
         """Function that handles the notification POST request by Home Assistant.
-        This function is called by the http server when a notification is received, it converts the
-        notification to the format dbus uses and emits it.
+
+        This is the only entry point to start logic in this class.
+            This function is called by the http server when a notification is received. The notification is transformed
+            to the format dbus uses, and sent to dbus.
+
+        :param request: The request object
+        :return: The response object (always 200, OK)
         """
-        hanot: dict = await request.json()
-        if "data" not in hanot:
-            hanot["data"] = {}
-        logging.info("Received notification request:%s", hanot)  # TODO: Move to debug once 1.0
-        asyncio.create_task(self.dbus_notify(self.ha_notification_to_dbus(hanot)))
-        return Response(text="OK")
+        notification: dict = await request.json()
+        push_token = notification.get("push_token")
 
-    async def on_action(self, id, action):
-        """Function to handle the dbus notification action event"""
-        notification = self.history.get(id, None)
-        logger.info("Notification action received: id:%s, action:%s", id, action)
-        # Default action is not sent, since is just clicking the notification
-        # Also don't send if the data can't be found
-        # TODO: REFACTOR THIS LOGIC, IS BEING REPEATED IN on_close TODO
-        if notification and action != "default":
-            data = self.event_data(id=id, action=action)
-            asyncio.create_task(self.api.post("/api/events/mobile_app_notification_action", json.dumps(data)))
+        # Check if the notification is for this device
+        if push_token != self.push_token:
+            logger.error("Notification push_token does not match: %s != %s", push_token, self.push_token)
+            return Response(status=400)
 
-    async def on_close(self, id, reason):
-        """Function to handle the dbus notification close event"""
-        hanot = self.history.get(id, {})
-        tag = hanot.get("data", {}).get("tag", "NOTAG")
-        logger.info("Notification closed received: id:%s, tag:%s reason:%s", id, tag, reason)
-        if hanot:
-            data = self.event_data(id)
-            asyncio.create_task(self.api.post("/api/events/mobile_app_notification_cleared", json.dumps(data)))
+        # Add the data, avoids the need to check (branching) ahead
+        if "data" not in notification:
+            notification["data"] = {}
 
-    def event_data(self, id: int, action: str = "") -> dict:
-        """Function to get the event data given an event type and notification id"""
-        notification = self.history.get(id, None)
-        data = {}
+        logger.info("Received notification request:%s", notification)  # TODO: Move to debug once 1.0
+        asyncio.create_task(self.dbus_notify(self.ha_notification_to_dbus(notification)))
+
+        return Response(status=200, text="OK")
+
+    async def ha_event_trigger(self, event: str, action: str = "", notification: dict = {}) -> bool:
+        """Function to trigger the Home Assistant event given an event type and notification dictionary.
+        Actions are first handled in on_action which decides wether to emit the event or not.
+
+        :param event: The event type
+        :param id: The dbus id of the notification
+        :param action: The action that was invoked (if any)
+        :return: True if the event was triggered, False otherwise
+        """
+        endpoint = EVENTS_ENPOINT[event]
+
         if notification:
             data = {
                 "title": notification.get("title", ""),
@@ -124,17 +124,26 @@ class Notifier:
                 **notification["data"],
             }
             data.pop("actions")  # Replaced by event_actions
-            if action != "":
+
+            if event == "action":
                 data["action"] = action
 
-        return data
+            res = await asyncio.create_task(self.api.post(endpoint, json.dumps(data)))
+            logger.info("Sent Assistant event:%s data:%s response:%s", endpoint, data, res.status)
+            return True
 
-    def ha_notification_to_dbus(self, hanot: dict) -> dict:
-        """Function to convert a homeassistant notification to a dbus notification.
+        return False
+
+    def ha_notification_to_dbus(self, notification: dict) -> dict:
+        """Function to convert a Home Assistant notification to a dbus notification.
         This is done in a best effort manner, as the homeassistant notification format can't be fully translated.
+
+        This function mutates the notification dict.
+        :param notification: The notification to convert (mutated)
+        :return: The mutated notification passed with the necessary fields to invoke a dbus notification.
         """
-        data: dict = hanot["data"]
-        actions: List[str] = []
+        data: dict = notification["data"]
+        actions: List[str] = ["default", "Default"]
         hints: Dict[str, Variant] = {}
         icon: str = HA_ICON  # Icon path
         timeout: int = -1  # -1 means notification server decides how long to show
@@ -145,19 +154,21 @@ class Notifier:
             # https://people.gnome.org/~mccann/docs/notification-spec/notification-spec-latest.html#basic-design
 
             # Actions are as such [id, name, id, name, ...]
-            event_actions = {}  # Format the actions as neccessary for on_close an on_action events
+            event_actions = {}  # Format the actions as necessary for on_close an on_action events
             counter = 1
+            default_action_uri: str = ""
             if "url" in data:
-                actions.extend(["default", "Default Action"])
+                default_action_uri = data["url"]
             elif "clickAction" in data:
-                actions.extend(["default", data["Default Action"]])
+                default_action_uri = data["clickAction"]
             for a in data.get("actions", []):
                 actions.extend([a["action"], a["title"]])
                 # This is necessary when sending event data on_closed, on_action
                 event_actions[f"action_{counter}_key"] = a["action"]
                 event_actions[f"action_{counter}_title"] = a["title"]
 
-            hanot["event_actions"] = event_actions
+            notification["event_actions"] = event_actions
+            notification["default_action_uri"] = default_action_uri
 
             # Hints: Importance: Urgency
 
@@ -171,14 +182,74 @@ class Notifier:
             # Timeout
             timeout = data.get("duration", timeout)
 
-        hanot.update({
-            "title": hanot.get("title", ""),
+        notification.update({
+            "title": notification.get("title", ""),
             "actions": actions,
             "hints": hints,
             "timeout": timeout,
             "icon": icon,  # TODO: Support custom icons
             "replace_id": 0,  # TODO: Implement
         })
-        logger.debug("Converted notification: %s", hanot)
+        logger.debug("Converted notification: %s", notification)
 
-        return hanot
+        return notification
+
+    async def dbus_notify(self, notification: dict) -> None:
+        """Function to send a native dbus notification.
+        According to the following link:
+            Section  org.freedesktop.Notifications.Notify
+            https://people.gnome.org/~mccann/docs/notification-spec/notification-spec-latest.html#protocol
+
+        :param notification: The notification to send, at this point it should be transformed to the format dbus uses,
+            from the format Home Assistant sends.
+        :return: None
+        """
+        id = await self.interface.call_notify(APP_NAME, notification["replace_id"], notification["icon"],
+                                              notification["title"], notification["message"], notification["actions"],
+                                              notification["hints"], notification["timeout"])
+
+        # Store in the history
+        self.history[id] = notification
+        tag = notification["data"].get("tag", None)
+        if tag:
+            self.tagtoid[tag] = id
+
+        logger.info("Dbus notification dispatched id:%s", id)
+
+    async def on_action(self, id, action) -> None:
+        """Function to handle the dbus notification action event
+        If a notifications is found, and the action is not the default action, an event is triggered to home assistant.
+        (This is how the android app handles actions).
+
+        :param id: The dbus id of the notification
+        :param action: The action that was invoked
+        :return: None
+        """
+        logger.info("Notification action dbus event received: id:%s, action:%s", id, action)
+        notification = self.history.get(id, {})
+        actions = notification.get("actions", [])
+        uri: str
+        if notification and actions:
+            emit_event: bool = True
+            uri = actions[actions.index(action) + 1]
+            if action == "default":
+                uri = notification.get("default_action_uri", "")
+                emit_event = False
+
+            if uri.startswith("http"):
+                asyncio.create_task(asyncio.create_subprocess_exec("xdg-open", uri))
+                logger.info("Launched action:%s uri:%s", action, uri)
+
+            if emit_event:
+                asyncio.create_task(self.ha_event_trigger("action", action, notification))
+
+    async def on_close(self, id, reason) -> None:
+        """Function to handle the dbus notification close event
+        Sends the data to ha_event_trigger, where the event is created and sent to Home Assistant.
+
+        :param id: The dbus id of the notification
+        :param reason: The reason the notification was closed
+        """
+        logger.info("Notification closed dbus event received: id:%s, reason:%s", id, reason)
+        notification = self.history.get(id, {})
+        asyncio.create_task(self.ha_event_trigger(event="closed", notification=notification))
