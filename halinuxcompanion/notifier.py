@@ -48,11 +48,12 @@ class Notifier:
     interface: ProxyInterface
     api: API
     push_token: str
+    url_program: str
 
     def __init__(self):
         pass
 
-    async def init(self, bus, api, webserverver, push_token) -> None:
+    async def init(self, bus, api, webserverver, push_token, url_program) -> None:
         """Function to initialize the notifier.
         1. Handles creating the ProxyInterface to send notifications and listen to events.
         2. Registers an http handler to the webserver for Home Assistant notifications.
@@ -76,6 +77,7 @@ class Notifier:
         # API and necessary data
         self.api = api
         self.push_token = push_token
+        self.url_program = url_program
 
     # Entrypoint to the Class logic
     async def on_ha_notification(self, request) -> Response:
@@ -86,7 +88,7 @@ class Notifier:
             to the format dbus uses, and sent to dbus.
 
         :param request: The request object
-        :return: The response object (always 200, OK)
+        :return: The response object
         """
         notification: dict = await request.json()
         push_token = notification.get("push_token")
@@ -100,7 +102,7 @@ class Notifier:
         if "data" not in notification:
             notification["data"] = {}
 
-        logger.info("Received notification request:%s", notification)  # TODO: Move to debug once 1.0
+        logger.info("Received notification request:%s", notification)
         asyncio.create_task(self.dbus_notify(self.ha_notification_to_dbus(notification)))
 
         return Response(status=200, text="OK")
@@ -236,8 +238,8 @@ class Notifier:
                 uri = notification.get("default_action_uri", "")
                 emit_event = False
 
-            if uri.startswith("http"):
-                asyncio.create_task(asyncio.create_subprocess_exec("xdg-open", uri))
+            if uri.startswith("http") and self.url_program != "":
+                asyncio.create_task(asyncio.create_subprocess_exec(self.url_program, uri))
                 logger.info("Launched action:%s uri:%s", action, uri)
 
             if emit_event:

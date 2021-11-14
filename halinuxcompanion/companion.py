@@ -29,6 +29,8 @@ class Companion:
                         "push_token": str(uuid.uuid1()), # TODO: Random generation
                         "push_url": f"http://{self.computer_ip}:{self.computer_port}/notify",
                     }
+                if config["services"]["url_handler"]["enabled"] is True:
+                    self.url_program = config["services"]["url_handler"]["program"]
             except KeyError:
                 pass
 
@@ -68,3 +70,4 @@ class Companion:
     computer_port: int = 8400
     ha_url: str = "http://localhost:8123"
     ha_token: str
+    url_program: str = ""
