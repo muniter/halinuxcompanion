@@ -7,7 +7,6 @@ from halinuxcompanion.sensors.memory import Memory
 from halinuxcompanion.sensors.uptime import Uptime
 
 import asyncio
-import aiohttp
 import json
 import logging
 import argparse
@@ -60,20 +59,26 @@ async def main():
     sensors = [Cpu, Memory, Uptime]  # Sensors to send to Home Assistant
 
     if companion.notifier:
-        bus = await init_bus()  # DBus client to send desktop notifications and listen to signals
-        notifier = Notifier()  # Notifier that handles from server and sends to bus
+        # DBus session client to send desktop notifications and listen to signals
+        bus = await init_bus()
+        # Notifier HA -> Webserver -> dbus | dbus -> event_handler -> HA
+        notifier = Notifier()
         await notifier.init(bus, api, server, companion.app_data["push_token"], companion.url_program)
         await server.start()
 
-    # TODO: What happens if home assistant is not running? (It crashes)
-    await api.register_device()
+    # If the device can't be registered exit immidiately, nothing to do.
+    if not await api.register_device():
+        logger.critical("Device registration failed, exiting now")
+        exit(1)
+
     await asyncio.gather(*[api.register_sensor(s) for s in sensors])
     await api.update_sensors(sensors)  # Send initial data to Home Assistant (again, needed)
 
     interval = companion.refresh_interval
-    # TODO: Catch network problems.
+    # Loop forever updating sensors.
     while True:
         await asyncio.sleep(interval)
+        await api.update_sensors(sensors)
 
 
 loop = asyncio.get_event_loop()

@@ -2,10 +2,11 @@ from halinuxcompanion.api import API
 
 import asyncio
 from aiohttp.web import Response
+from aiohttp import ClientError
 from dbus_next.aio import ProxyInterface
 from dbus_next.signature import Variant
 from importlib.resources import path as resource_path
-from typing import Coroutine, Dict, List
+from typing import Dict, List
 import json
 import logging
 
@@ -130,9 +131,12 @@ class Notifier:
             if event == "action":
                 data["action"] = action
 
-            res = await asyncio.create_task(self.api.post(endpoint, json.dumps(data)))
-            logger.info("Sent Assistant event:%s data:%s response:%s", endpoint, data, res.status)
-            return True
+            try:
+                res = await self.api.post(endpoint, json.dumps(data))
+                logger.info("Sent Home Assistant event:%s data:%s response:%s", endpoint, data, res.status)
+                return True
+            except ClientError as e:
+                logger.error("Error sending Home Assistant event: %s", e)
 
         return False
 

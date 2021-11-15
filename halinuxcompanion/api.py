@@ -1,11 +1,10 @@
 from .companion import Companion
 from .sensor import Sensor
 
-import aiohttp
-from aiohttp import web
 import json
-from typing import List, Union
 import logging
+from aiohttp import (web, ClientSession, ClientResponse, ClientError)
+from typing import List, Union
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +13,7 @@ SC_REGISTER_SENSOR = 301
 SC_INVALID_JSON = 400
 SC_MOBILE_COMPONENT_NOT_LOADED = 404
 SC_INTEGRATION_DELETED = 410
-SESSION: Union[aiohttp.ClientSession, None] = None
+SESSION: Union[ClientSession, None] = None
 
 
 class API:
@@ -31,19 +30,19 @@ class API:
     webhook_url: str
     counter: int = 0
     update_counter: int = 0
-    session: aiohttp.ClientSession
+    session: ClientSession
 
     def __init__(self, companion: Companion):
         global SESSION
         if SESSION is None:
-            SESSION = aiohttp.ClientSession()
+            SESSION = ClientSession()
         self.session = SESSION
         self.token = companion.ha_token
         self.headers = {'Authorization': 'Bearer ' + self.token}
         self.instance_url = companion.ha_url
         self.register_payload = companion.registration_payload()
 
-    async def webhook_post(self, type: str, data: str) -> aiohttp.ClientResponse:
+    async def webhook_post(self, type: str, data: str) -> ClientResponse:
 
         logger.debug('Sending webhook POST %s type:%s ', self.counter, type)
 
@@ -61,7 +60,7 @@ class API:
 
             return res
 
-    async def post(self, endpoint: str, data: str) -> aiohttp.ClientResponse:
+    async def post(self, endpoint: str, data: str) -> ClientResponse:
         """Send a POST request to the given Home Assisntat endpoint
         Headers are set to the token and the body is set to the data
 
@@ -71,7 +70,7 @@ class API:
         """
         return await self.session.post(self.instance_url + endpoint, headers=self.headers, data=data)
 
-    async def get(self, endpoint) -> aiohttp.ClientResponse:
+    async def get(self, endpoint) -> ClientResponse:
         """Send a GET request to the given Home Assisntat endpoint
         Headers are set to the token and the body is set to the data
 
@@ -80,7 +79,7 @@ class API:
         """
         return await self.session.get(self.instance_url + endpoint, headers=self.headers)
 
-    async def register_device(self):
+    async def register_device(self) -> bool:
         register_data = json.dumps(self.register_payload)
         logger.info('Registering companion device with payload:%s', register_data)
         res = await self.post('/api/mobile_app/registrations', data=register_data)
@@ -93,11 +92,11 @@ class API:
             self.secret = data['secret']
             self.webhook_id = data['webhook_id']
             self.webhook_url = self.instance_url + '/api/webhook/' + self.webhook_id
-            logger.info('Registration successful, received the neccesarry data from the server')
+            logger.info('Device Registration successful, received the neccesarry data from the server')
             return True
         else:
-            logger.error('Registration failed with status code %s', res.status)
-            exit(1)  # TODO: Should not exit but try reconnecting
+            logger.critical('Device Registration failed with status code %s', res.status)
+            return False
 
     async def register_sensor(self, sensor: Sensor):
         data = {"data": sensor.register(), "type": "register_sensor"}
@@ -113,19 +112,22 @@ class API:
             logger.error('Sensor registration failed with status code:%s sensor:%s', res.status, sid)
             return False
 
-    async def update_sensors(self, sensors: List[Sensor]):
+    async def update_sensors(self, sensors: List[Sensor]) -> bool:
         self.update_counter += 1
         data = {"type": "update_sensor_states", "data": [sensor.update() for sensor in sensors]}
         sids = [sensor.unique_id for sensor in sensors]
         logger.info('Sensors update %s with sensors: %s', self.update_counter, sids)
-        res = await self.webhook_post('register_sensor', data=json.dumps(data))
+        try:
+            res = await self.webhook_post('register_sensor', data=json.dumps(data))
+            if res.ok or res.status == SC_REGISTER_SENSOR:
+                logger.info('Sensors update %s successful', self.update_counter)
+                return True
+            else:
+                logger.error('Sensors update %s failed with status code:%s', self.update_counter, res.status)
+        except ClientError as e:
+            logger.error('Sensors update %s failed with error:%s', self.update_counter, e)
 
-        if res.ok or res.status == SC_REGISTER_SENSOR:
-            logger.info('Sensors update %s successful', self.update_counter)
-            return True
-        else:
-            logger.error('Sensors update %s failed with status code:%s', self.update_counter, res.status)
-            return False
+        return False
 
 
 class Server:
