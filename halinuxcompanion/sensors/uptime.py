@@ -1,4 +1,3 @@
-from types import MethodType
 from halinuxcompanion.sensor import Sensor
 import psutil
 from datetime import datetime

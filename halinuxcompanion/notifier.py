@@ -43,9 +43,10 @@ class Notifier:
     1. It receives a notification by registering a handler to the web server spawned by the application.
     2. It transforms the notification to the format dbus uses.
     3. It sets up the proxy object to send dbus notifications, and listen to events related to this notifications.
-    4. It sends the notification to dbus.s
+    4. It sends the notification to dbus.
     5. Listens to the dbus events related to this notification.
-    6. When dbus events are generated, it emits the event to Home Assistant.
+    6. When dbus events are generated, it emits the event to Home Assistant (if appropieate).
+    7. Some action events perform a local action like opening a url.
     """
     # Only keeping the last 20 notifications and popping everytime a new one is added
     history: OrderedDict[int, dict] = OrderedDict((x, EMPTY_DICT) for x in range(-1, -21, -1))
@@ -65,6 +66,7 @@ class Notifier:
         3. Register callbacks for dbus events (on_action_invoked and on_notification_closed).
         4. Keeps a reference to the API for firing events in Home Assistant.
         5. Sets the push_token used to check if the notification is for this device.
+        6. Sets the url_program used to open urls.
         """
         interface = 'org.freedesktop.Notifications'
         path = '/org/freedesktop/Notifications'
@@ -104,7 +106,7 @@ class Notifier:
             return Response(status=400)
 
         logger.info("Received notification request:%s", notification)
-        asyncio.create_task(self.dbus_notify(self.ha_notification_to_dbus(notification)))
+        asyncio.create_task(self.dbus_notify(self.notification_transform(notification)))
 
         return Response(status=200, text="OK")
 
@@ -113,8 +115,8 @@ class Notifier:
         Actions are first handled in on_action which decides wether to emit the event or not.
 
         :param event: The event type
-        :param id: The dbus id of the notification
         :param action: The action that was invoked (if any)
+        :param notification: The notification dictionary
         :return: True if the event was triggered, False otherwise
         """
         endpoint = EVENTS_ENPOINT[event]
@@ -140,11 +142,11 @@ class Notifier:
 
         return False
 
-    def ha_notification_to_dbus(self, notification: dict) -> dict:
+    def notification_transform(self, notification: dict) -> dict:
         """Function to convert a Home Assistant notification to a dbus notification.
         This is done in a best effort manner, as the homeassistant notification format can't be fully translated.
-
         This function mutates the notification dict.
+
         :param notification: The notification to convert (mutated)
         :return: The mutated notification passed with the necessary fields to invoke a dbus notification.
         """
@@ -238,15 +240,14 @@ class Notifier:
 
         :param id: The dbus id of the notification
         :param action: The action that was invoked
-        :return: None
         """
         logger.info("Notification action dbus event received: id:%s, action:%s", id, action)
         notification: dict = self.history.get(id, {})
         actions: List[dict] = notification["data"].get("actions", {})
         uri: str
-        if notification and actions:
+        if notification and (actions or action == "default"):
             emit_event: bool = True
-            # actions is a list of dictionaries {"action": "action_name", "title": "Action Name", "uri": "uri"}
+            # actions is a list of dictionaries {"action": "turn_off", "title": "Turn off House", "uri": "http://..."}
             if action == "default":
                 uri = notification.get("default_action_uri", "")
                 emit_event = False

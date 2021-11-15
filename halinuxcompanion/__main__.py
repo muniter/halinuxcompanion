@@ -1,6 +1,7 @@
 from halinuxcompanion.api import API, Server
 from halinuxcompanion.dbus import init_bus
 from halinuxcompanion.notifier import Notifier
+from halinuxcompanion.sensor import SensorManager
 from halinuxcompanion.companion import Companion
 from halinuxcompanion.sensors.cpu import Cpu
 from halinuxcompanion.sensors.memory import Memory
@@ -43,6 +44,15 @@ def commandline() -> argparse.Namespace:
 
 
 async def main():
+    """ Main function
+    The program is fairly simple, data is sent and received to/from Home Assistant over HTTP
+    Sensors:
+        - Data is collected from sensors and sent to Home Assistant.
+    Notifications:
+        - Sent from Home Assistant to the application via embeded webserver, this are sent to the desktop using Dbus.
+        - Actions are triggered in dbus listened by the application. Some are handled locally others are handled by Home
+          Assistant, events are relayed to it as expected (closed and action).
+    """
     args = commandline()
     logging.basicConfig(level="INFO")
     config = load_config(args.config)
@@ -53,33 +63,37 @@ async def main():
     elif "loglevel" in config:
         logger.setLevel(config["loglevel"])
 
-    companion = Companion(config)
+    companion = Companion(config)  # Companion objet where configuration is stored
     api = API(companion)  # API client to send data to Home Assistant
     server = Server(companion)  # HTTP server that handles notifications
-    sensors = [Cpu, Memory, Uptime]  # Sensors to send to Home Assistant
+    sensor_manager = SensorManager(api, [Cpu, Memory, Uptime])  # Upadting and registering sensors
 
+    # If the device can't be registered exit immidiately, nothing to do.
+    ok, reg_data = await companion.register(api)
+    api.process_registration_data(reg_data)
+    if not ok:
+        logger.critical("Device registration failed, exiting now")
+        exit(1)
+
+    # If sensors can't be registered exit immidiately, nothing to do.
+    if not await sensor_manager.register_sensors():
+        logger.critical("Sensor registration failed, exiting now")
+        exit(1)
+
+    # Initialize the notifier which implies the webserver and the dbus interface
     if companion.notifier:
         # DBus session client to send desktop notifications and listen to signals
         bus = await init_bus()
-        # Notifier HA -> Webserver -> dbus | dbus -> event_handler -> HA
+        # Notifier behavior: HA -> Webserver -> dbus ... dbus -> event_handler -> HA
         notifier = Notifier()
         await notifier.init(bus, api, server, companion.app_data["push_token"], companion.url_program)
         await server.start()
 
-    # If the device can't be registered exit immidiately, nothing to do.
-    if not await api.register_companion():
-        logger.critical("Device registration failed, exiting now")
-        exit(1)
-
-    # TODO: Errors in sensor registration should exit the program, currently unhandled exception
-    await asyncio.gather(*[api.register_sensor(s) for s in sensors])
-    await api.update_sensors(sensors)  # Send initial data to Home Assistant (again, needed)
-
     interval = companion.refresh_interval
     # Loop forever updating sensors.
     while True:
+        await sensor_manager.update_sensors()
         await asyncio.sleep(interval)
-        await api.update_sensors(sensors)
 
 
 loop = asyncio.get_event_loop()

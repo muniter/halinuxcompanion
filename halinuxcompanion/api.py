@@ -1,15 +1,11 @@
 from .companion import Companion
-from .sensor import Sensor
 
-import json
 import logging
-from aiohttp import (web, ClientSession, ClientResponse, ClientError)
-from typing import List, Union
+from aiohttp import (web, ClientSession, ClientResponse)
+from typing import Union
 
 logger = logging.getLogger(__name__)
 
-SC_OK = 200
-SC_REGISTER_SENSOR = 301
 SC_INVALID_JSON = 400
 SC_MOBILE_COMPONENT_NOT_LOADED = 404
 SC_INTEGRATION_DELETED = 410
@@ -32,7 +28,7 @@ class API:
     update_counter: int = 0
     session: ClientSession
 
-    def __init__(self, companion: Companion):
+    def __init__(self, companion: Companion) -> None:
         global SESSION
         if SESSION is None:
             SESSION = ClientSession()
@@ -84,72 +80,15 @@ class API:
         """
         return await self.session.get(self.instance_url + endpoint, headers=self.headers)
 
-    async def register_companion(self) -> bool:
-        """Register the companion with Home Assisntat
-        If the registration fails it's a critical error and the program should exit.
-
-        :return: True if the registration was successful, False otherwise
+    def process_registration_data(self, data: dict) -> None:
+        """Process the data returned from the registration endpoint
+        :param data: The data returned from the registration endpoint
         """
-        register_data = json.dumps(self.register_payload)
-        logger.info('Registering companion device with payload:%s', register_data)
-        res = await self.post('/api/mobile_app/registrations', data=register_data)
-
-        if res.ok:
-            data = await res.json()
-            self.cloudhook_url = data.get('cloudhook_url', None)
-            self.remote_ui_url = data.get('remote_ui_url', None)
-            # Both should error if not present
-            self.secret = data['secret']
-            self.webhook_id = data['webhook_id']
-            self.webhook_url = self.instance_url + '/api/webhook/' + self.webhook_id
-            logger.info('Device Registration successful, received the neccesarry data from the server')
-            return True
-        else:
-            logger.critical('Device Registration failed with status code %s', res.status)
-            return False
-
-    async def register_sensor(self, sensor: Sensor):
-        """Register a sensor with Home Assisntat
-        If the registration fails it's a critical error and the program should exit.
-
-        :param sensor: The sensor to register
-        :return: True if the registration was successful, False otherwise
-        """
-        data = {"data": sensor.register(), "type": "register_sensor"}
-        sid = sensor.unique_id
-        data = json.dumps(data)
-        logger.info('Registering sensor:%s payload:%s', sid, data)
-        res = await self.webhook_post('register_sensor', data=data)
-
-        if res.ok or res.status == SC_REGISTER_SENSOR:
-            logger.info('Sensor registration successful: %s', sid)
-            return True
-        else:
-            logger.error('Sensor registration failed with status code:%s sensor:%s', res.status, sid)
-            return False
-
-    async def update_sensors(self, sensors: List[Sensor]) -> bool:
-        """Update the given sensors with Home Assisntat
-        If the update fails it's an error and it should be retried by the caller.
-
-        :param sensors: The sensors to update
-        :return: True if the update was successful, False otherwise
-        """
-        self.update_counter += 1
-        data = {"type": "update_sensor_states", "data": [sensor.update() for sensor in sensors]}
-        sids = [sensor.unique_id for sensor in sensors]
-        logger.info('Sensors update %s with sensors: %s', self.update_counter, sids)
-        try:
-            res = await self.webhook_post('update_sensors', data=json.dumps(data))
-            if res.ok or res.status == SC_REGISTER_SENSOR:
-                logger.info('Sensors update %s successful', self.update_counter)
-                return True
-            else:
-                logger.error('Sensors update %s failed with status code:%s', self.update_counter, res.status)
-        except ClientError as e:
-            logger.error('Sensors update %s failed with error:%s', self.update_counter, e)
-
-        return False
+        self.secret = data['secret']
+        self.webhook_id = data['webhook_id']
+        self.webhook_url = self.instance_url + '/api/webhook/' + self.webhook_id
+        self.cloudhook_url = data.get('cloudhook_url', "")
+        self.remote_ui_url = data.get('remote_ui_url', "")
 
 
 class Server:
@@ -158,12 +97,12 @@ class Server:
     host: str
     port: int
 
-    def __init__(self, companion: Companion):
+    def __init__(self, companion: Companion) -> None:
         self.app = web.Application()
         self.host = companion.computer_ip
         self.port = companion.computer_port
 
-    async def start(self):
+    async def start(self) -> None:
         logger.info('Starting http server on %s:%s', self.host, self.port)
         runner = web.AppRunner(self.app)
         await runner.setup()
