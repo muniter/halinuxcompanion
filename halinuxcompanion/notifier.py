@@ -103,10 +103,6 @@ class Notifier:
             logger.error("Notification push_token does not match: %s != %s", push_token, self.push_token)
             return Response(status=400)
 
-        # Add the data, avoids the need to check (branching) ahead
-        if "data" not in notification:
-            notification["data"] = {}
-
         logger.info("Received notification request:%s", notification)
         asyncio.create_task(self.dbus_notify(self.ha_notification_to_dbus(notification)))
 
@@ -152,25 +148,23 @@ class Notifier:
         :param notification: The notification to convert (mutated)
         :return: The mutated notification passed with the necessary fields to invoke a dbus notification.
         """
-        data: dict = notification["data"]
+        # Add the data, avoids the need to check (branching) ahead
+        data: dict = notification.setdefault("data", {})
+        tag: str = data.setdefault("tag", "")
         actions: List[str] = ["default", "Default"]
         hints: Dict[str, Variant] = {}
         icon: str = HA_ICON  # Icon path
         timeout: int = -1  # -1 means notification server decides how long to show
+        replace_id: int = 0
         if data:
-            # Actions: Actions
-
+            # Actions
+            # Home Assisnant actions require seome transformation
             # https://companion.home-assistant.io/docs/notifications/actionable-notifications
             # https://people.gnome.org/~mccann/docs/notification-spec/notification-spec-latest.html#basic-design
 
-            # Actions are as such [id, name, id, name, ...]
+            # Dbus notification structure [id, name, id, name, ...]
             event_actions = {}  # Format the actions as necessary for on_close an on_action events
             counter = 1
-            default_action_uri: str = ""
-            if "url" in data:
-                default_action_uri = data["url"]
-            elif "clickAction" in data:
-                default_action_uri = data["clickAction"]
             for a in data.get("actions", []):
                 actions.extend([a["action"], a["title"]])
                 # This is necessary when sending event data on_closed, on_action
@@ -178,10 +172,10 @@ class Notifier:
                 event_actions[f"action_{counter}_title"] = a["title"]
 
             notification["event_actions"] = event_actions
-            notification["default_action_uri"] = default_action_uri
+            notification["default_action_uri"] = data.get("url", "") or data.get("clickAction", "")
 
-            # Hints: Importance: Urgency
-
+            # Hints:
+            # Importance -> Urgency
             # https://people.gnome.org/~mccann/docs/notification-spec/notification-spec-latest.html#urgency-levels
             # https://companion.home-assistant.io/docs/notifications/notifications-basic/#notification-channel-importance
             urgency = URGENCY_NORMAL  # Normal level
@@ -192,13 +186,17 @@ class Notifier:
             # Timeout
             timeout = data.get("duration", timeout)
 
+            # Replaces id:
+            # Using the notification tag, check if it should replace an existing notification
+            replace_id = self.tagtoid.get(tag, 0)
+
         notification.update({
             "title": notification.get("title", ""),
             "actions": actions,
             "hints": hints,
             "timeout": timeout,
             "icon": icon,  # TODO: Support custom icons
-            "replace_id": 0,  # TODO: Implement
+            "replace_id": replace_id,
         })
         logger.debug("Converted notification: %s", notification)
 
@@ -217,17 +215,21 @@ class Notifier:
         id = await self.interface.call_notify(APP_NAME, notification["replace_id"], notification["icon"],
                                               notification["title"], notification["message"], notification["actions"],
                                               notification["hints"], notification["timeout"])
+        logger.info("Dbus notification dispatched id:%s", id)
+        logger.debug("Dbus notification %s data: %s", id, notification)
 
-        # History managing: Once stored the oldest item is removed, and if a
-        # tag exists for it is removed as well.
+        # History management: Add the new notification, and remove the oldest one.
+        # Storage
         self.history[id] = notification
         tag: str = notification["data"].get("tag", None)
         if tag:
             self.tagtoid[tag] = id
 
-        _, p = self.history.popitem(last=False)
-        self.tagtoid.pop(p.get("tag", ""), "")
-        logger.info("Dbus notification dispatched id:%s", id)
+        # Removal
+        _, old_not = self.history.popitem(last=False)
+        otag = old_not.get("data", {}).get("tag", "")
+        if otag in self.tagtoid:
+            self.tagtoid.pop(otag)
 
     async def on_action(self, id: int, action: str) -> None:
         """Function to handle the dbus notification action event
