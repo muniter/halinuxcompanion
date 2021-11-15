@@ -243,9 +243,13 @@ class Notifier:
         """
         logger.info("Notification action dbus event received: id:%s, action:%s", id, action)
         notification: dict = self.history.get(id, {})
+        if not notification:
+            logger.info("No notification found for id:%s, doesn't belong to this applicaton", id)
+            return
+
         actions: List[dict] = notification["data"].get("actions", {})
-        uri: str
-        if notification and (actions or action == "default"):
+        if actions or action == "default":
+            uri: str
             emit_event: bool = True
             # actions is a list of dictionaries {"action": "turn_off", "title": "Turn off House", "uri": "http://..."}
             if action == "default":
@@ -270,4 +274,7 @@ class Notifier:
         """
         logger.info("Notification closed dbus event received: id:%s, reason:%s", id, reason)
         notification = self.history.get(id, {})
-        asyncio.create_task(self.ha_event_trigger(event="closed", notification=notification))
+        if notification:
+            asyncio.create_task(self.ha_event_trigger(event="closed", notification=notification))
+        else:
+            logger.info("No notification found for id:%s, doesn't belong to this applicaton", id)
