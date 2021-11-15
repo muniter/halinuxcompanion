@@ -1,0 +1,13 @@
+[Unit]
+Description=Home Assistant Linux Companion
+Documentation=https://github.com/muniter/halinuxcompanion
+After=networking.target
+
+[Service]
+WorkingDirectory=~/.config/halinuxcompanion
+ExecStart=python3 -m halinuxcompanion -c config.json
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=default.target

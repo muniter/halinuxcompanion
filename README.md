@@ -8,6 +8,7 @@ Application to run on linux desktop computer to provide sensors data to homeasss
 1. Install requirements `pip3 install -r requirements.txt`
 1. Modify `config.json` to match your setup and desired options.
 1. Run the application `python3 -m halinuxcompanion --config config.json`
+    - Alternative setup a systemd service using the [provided unit file](halinuxcompanion/resources/halinuxcompanion.service)
 
 Now in your homeasssistant you will see a new device in th-**"mobile_app"** integration, and there will be a new service to notify your linux desktop. Notification actions work and the expected events will be fired in Home Assistant.
 
