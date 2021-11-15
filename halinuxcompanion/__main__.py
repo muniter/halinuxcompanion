@@ -67,10 +67,11 @@ async def main():
         await server.start()
 
     # If the device can't be registered exit immidiately, nothing to do.
-    if not await api.register_device():
+    if not await api.register_companion():
         logger.critical("Device registration failed, exiting now")
         exit(1)
 
+    # TODO: Errors in sensor registration should exit the program, currently unhandled exception
     await asyncio.gather(*[api.register_sensor(s) for s in sensors])
     await api.update_sensors(sensors)  # Send initial data to Home Assistant (again, needed)
 

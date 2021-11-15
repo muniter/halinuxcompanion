@@ -43,6 +43,11 @@ class API:
         self.register_payload = companion.registration_payload()
 
     async def webhook_post(self, type: str, data: str) -> ClientResponse:
+        """Send a POST request to the webhook endpoint with the given type and data
+        Simple wrapper that handles and logs response status, should be wrapped to handle clinet errors.
+        :param type: Whats being posted, ussed for logging
+        :param data: The data to send in the body of the request (json serialized)
+        """
 
         logger.debug('Sending webhook POST %s type:%s ', self.counter, type)
 
@@ -70,16 +75,21 @@ class API:
         """
         return await self.session.post(self.instance_url + endpoint, headers=self.headers, data=data)
 
-    async def get(self, endpoint) -> ClientResponse:
+    async def get(self, endpoint: str) -> ClientResponse:
         """Send a GET request to the given Home Assisntat endpoint
-        Headers are set to the token and the body is set to the data
+        Headers are set to the token
 
         :param endpoint: The endpoint to send the request to (must have a leading /)
         :return: The response from Home Assisntat
         """
         return await self.session.get(self.instance_url + endpoint, headers=self.headers)
 
-    async def register_device(self) -> bool:
+    async def register_companion(self) -> bool:
+        """Register the companion with Home Assisntat
+        If the registration fails it's a critical error and the program should exit.
+
+        :return: True if the registration was successful, False otherwise
+        """
         register_data = json.dumps(self.register_payload)
         logger.info('Registering companion device with payload:%s', register_data)
         res = await self.post('/api/mobile_app/registrations', data=register_data)
@@ -99,6 +109,12 @@ class API:
             return False
 
     async def register_sensor(self, sensor: Sensor):
+        """Register a sensor with Home Assisntat
+        If the registration fails it's a critical error and the program should exit.
+
+        :param sensor: The sensor to register
+        :return: True if the registration was successful, False otherwise
+        """
         data = {"data": sensor.register(), "type": "register_sensor"}
         sid = sensor.unique_id
         data = json.dumps(data)
@@ -113,12 +129,18 @@ class API:
             return False
 
     async def update_sensors(self, sensors: List[Sensor]) -> bool:
+        """Update the given sensors with Home Assisntat
+        If the update fails it's an error and it should be retried by the caller.
+
+        :param sensors: The sensors to update
+        :return: True if the update was successful, False otherwise
+        """
         self.update_counter += 1
         data = {"type": "update_sensor_states", "data": [sensor.update() for sensor in sensors]}
         sids = [sensor.unique_id for sensor in sensors]
         logger.info('Sensors update %s with sensors: %s', self.update_counter, sids)
         try:
-            res = await self.webhook_post('register_sensor', data=json.dumps(data))
+            res = await self.webhook_post('update_sensors', data=json.dumps(data))
             if res.ok or res.status == SC_REGISTER_SENSOR:
                 logger.info('Sensors update %s successful', self.update_counter)
                 return True
