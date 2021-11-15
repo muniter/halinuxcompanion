@@ -6,6 +6,7 @@ from aiohttp import ClientError
 from dbus_next.aio import ProxyInterface
 from dbus_next.signature import Variant
 from importlib.resources import path as resource_path
+from collections import OrderedDict
 from typing import Dict, List
 import json
 import logging
@@ -34,6 +35,8 @@ EVENTS_ENPOINT = {
     "action": "/api/events/mobile_app_notification_action",
 }
 
+EMPTY_DICT = {}
+
 
 class Notifier:
     """Class that handles the lifetime of notifications
@@ -44,7 +47,8 @@ class Notifier:
     5. Listens to the dbus events related to this notification.
     6. When dbus events are generated, it emits the event to Home Assistant.
     """
-    history: Dict[int, dict] = {}  # Keeps a history of notifications
+    # Only keeping the last 20 notifications and popping everytime a new one is added
+    history: OrderedDict[int, dict] = OrderedDict((x, EMPTY_DICT) for x in range(-1, -21, -1))
     tagtoid: Dict[str, int] = {}  # Lookup id from tag
     interface: ProxyInterface
     api: API
@@ -214,12 +218,15 @@ class Notifier:
                                               notification["title"], notification["message"], notification["actions"],
                                               notification["hints"], notification["timeout"])
 
-        # Store in the history
+        # History managing: Once stored the oldest item is removed, and if a
+        # tag exists for it is removed as well.
         self.history[id] = notification
         tag: str = notification["data"].get("tag", None)
         if tag:
             self.tagtoid[tag] = id
 
+        _, p = self.history.popitem(last=False)
+        self.tagtoid.pop(p.get("tag", ""), "")
         logger.info("Dbus notification dispatched id:%s", id)
 
     async def on_action(self, id: int, action: str) -> None:
