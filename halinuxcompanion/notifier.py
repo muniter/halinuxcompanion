@@ -128,7 +128,7 @@ class Notifier:
                 **notification.get("event_actions", {}),
                 **notification["data"],
             }
-            data.pop("actions")  # Replaced by event_actions
+            data["actions"] = ""  # Replaced by event_actions
 
             if event == "action":
                 data["action"] = action
