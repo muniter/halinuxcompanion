@@ -1,6 +1,8 @@
 from halinuxcompanion.api import API
+from halinuxcompanion.dbus import Dbus
 from aiohttp import ClientError
-from typing import Union, List
+from typing import Union, List, Dict, Callable
+from functools import partial
 import json
 import logging
 import asyncio
@@ -23,7 +25,10 @@ class Sensor:
     state_class: str = ""
     entity_category: str = ""
     type: str
+    # Signal name (halinuxcompanion.dbus) and it's callback
+    signals: Dict[str, Callable] = {}
 
+    # TODO: Should be async
     def updater(self) -> None:
         """To be called every time update is called"""
         pass
@@ -66,16 +71,25 @@ class SensorManager:
     """Manages sensors registration, and updates to Home Assistant"""
     api: API
     update_counter: int = 0
-    sensors: List[Sensor] = []
+    sensors: Dict[str, Sensor] = {}
+    dbus: Dbus
 
-    def __init__(self, api: API, sensors: List[Sensor]) -> None:
+    def __init__(self, api: API, sensors: List[Sensor], dbus: Dbus) -> None:
         self.api = api
-        self.sensors = sensors
+        self.sensors = {sensor.unique_id: sensor for sensor in sensors}
+        self.dbus = dbus
 
     async def register_sensors(self) -> bool:
-        """Register all sensors with Home Assisntat"""
-        res = await asyncio.gather(*[self._register_sensor(s) for s in self.sensors])
-        return all(res)
+        """Register all sensors with Home Assisntat
+        If all have been registered successfully, register each sensor signals
+        """
+        res = await asyncio.gather(*[self._register_sensor(s) for s in self.sensors.values()])
+        if all(res):
+            # If all sensors registered successfully, register their signals
+            await self.register_signals()
+            return True
+
+        return False
 
     async def _register_sensor(self, sensor: Sensor) -> bool:
         """Register a sensor with Home Assisntat
@@ -97,7 +111,7 @@ class SensorManager:
             logger.error('Sensor registration failed with status code:%s sensor:%s', res.status, sid)
             return False
 
-    async def update_sensors(self, sensors: List[Sensor] = []) -> bool:
+    async def update_sensors(self, sensors: Dict[str, Sensor] = {}) -> bool:
         """Update the given sensors with Home Assisntat
         If the update fails it's an error and it should be retried by the caller.
 
@@ -106,9 +120,9 @@ class SensorManager:
         """
         sensors = sensors or self.sensors
         self.update_counter += 1
-        data = {"type": "update_sensor_states", "data": [sensor.update() for sensor in sensors]}
-        sids = [sensor.unique_id for sensor in sensors]
-        logger.info('Sensors update %s with sensors: %s', self.update_counter, sids)
+        data = {"type": "update_sensor_states", "data": [sensor.update() for sensor in sensors.values()]}
+        logger.info('Sensors update %s with sensors: %s', self.update_counter, sensors.keys())
+        logger.debug('Sensors update %s with sensors: %s payload: %s', self.update_counter, sensors.keys(), data)
         try:
             res = await self.api.webhook_post('update_sensors', data=json.dumps(data))
             if res.ok or res.status == SC_REGISTER_SENSOR:
@@ -120,3 +134,27 @@ class SensorManager:
             logger.error('Sensors update %s failed with error:%s', self.update_counter, e)
 
         return False
+
+    async def _signal_hanlder(self, sensor: Sensor, signal_alias: str, signal_handler: Callable, *args) -> None:
+        """Signal handler for the sensor manager
+        Each sensor can have multiple signals, at the moment defined in halinuxcompanion.dbus, the callback provided for
+        the signal is this function wrapped in a functools.partial this allows for the SensorManager to be in charge of
+        actually calling the sensor callback and therefore be able to know when to update it.
+
+        :param sensor: The sensor that the signal belongs to
+        :param signal_alias: The signal alias (defined in halinuxcompanion.dbus)
+        :param signal_handler: The signal handler (defined by the sensor in sensor.signals)
+        :param args: The arguments to pass to the signal handler (coming from the dbus signal)
+        """
+        logger.info('Signal %s received for sensor:%s', signal_alias, sensor.unique_id)
+        await signal_handler(sensor, *args)
+        asyncio.create_task(self.update_sensors({sensor.unique_id: sensor}))
+
+    async def register_signals(self) -> None:
+        """Register all signals from all sensors.
+        Each sensor defines signals with a name and callback, which is called by self._signal_handler
+        """
+        for sensor in self.sensors.values():
+            for signal_alias, signal_handler in sensor.signals.items():
+                callback = partial(self._signal_hanlder, sensor, signal_alias, signal_handler)
+                await self.dbus.register_signal(signal_alias, callback)

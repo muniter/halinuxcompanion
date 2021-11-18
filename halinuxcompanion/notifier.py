@@ -60,7 +60,7 @@ class Notifier:
     def __init__(self):
         pass
 
-    async def init(self, bus, api, webserverver, push_token, url_program) -> None:
+    async def init(self, dbus, api, webserverver, push_token, url_program) -> None:
         """Function to initialize the notifier.
         1. Handles creating the ProxyInterface to send notifications and listen to events.
         2. Registers an http handler to the webserver for Home Assistant notifications.
@@ -69,12 +69,8 @@ class Notifier:
         5. Sets the push_token used to check if the notification is for this device.
         6. Sets the url_program used to open urls.
         """
-        interface = 'org.freedesktop.Notifications'
-        path = '/org/freedesktop/Notifications'
-        introspection = await bus.introspect(interface, path)
-        proxy = bus.get_proxy_object(interface, path, introspection)
-        self.interface = proxy.get_interface(interface)
-
+        # Get the interface
+        self.interface = await dbus.get_interface("org.freedesktop.Notifications")
         # Setup dbus callbacks
         self.interface.on_action_invoked(self.on_action)
         self.interface.on_notification_closed(self.on_close)

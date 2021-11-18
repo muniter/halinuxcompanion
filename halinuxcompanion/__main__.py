@@ -1,11 +1,12 @@
 from halinuxcompanion.api import API, Server
-from halinuxcompanion.dbus import init_bus
+from halinuxcompanion.dbus import Dbus
 from halinuxcompanion.notifier import Notifier
 from halinuxcompanion.sensor import SensorManager
 from halinuxcompanion.companion import Companion
 from halinuxcompanion.sensors.cpu import Cpu
 from halinuxcompanion.sensors.memory import Memory
 from halinuxcompanion.sensors.uptime import Uptime
+from halinuxcompanion.sensors.state import State
 
 import asyncio
 import json
@@ -66,7 +67,11 @@ async def main():
     companion = Companion(config)  # Companion objet where configuration is stored
     api = API(companion)  # API client to send data to Home Assistant
     server = Server(companion)  # HTTP server that handles notifications
-    sensor_manager = SensorManager(api, [Cpu, Memory, Uptime])  # Upadting and registering sensors
+    # Initialize dbus connections
+    bus = Dbus()
+    await bus.init()
+    # Register sensors
+    sensor_manager = SensorManager(api, [Cpu, Memory, Uptime, State], bus)
 
     # If the device can't be registered exit immidiately, nothing to do.
     ok, reg_data = await companion.register(api)
@@ -82,8 +87,8 @@ async def main():
 
     # Initialize the notifier which implies the webserver and the dbus interface
     if companion.notifier:
+        # TODO: Session bus is initialized already.
         # DBus session client to send desktop notifications and listen to signals
-        bus = await init_bus()
         # Notifier behavior: HA -> Webserver -> dbus ... dbus -> event_handler -> HA
         notifier = Notifier()
         await notifier.init(bus, api, server, companion.app_data["push_token"], companion.url_program)
