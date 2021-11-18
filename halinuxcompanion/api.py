@@ -25,7 +25,6 @@ class API:
     webhook_id: str
     webhook_url: str
     counter: int = 0
-    update_counter: int = 0
     session: ClientSession
 
     def __init__(self, companion: Companion) -> None:
@@ -45,11 +44,11 @@ class API:
         :param data: The data to send in the body of the request (json serialized)
         """
 
+        self.counter += 1
         logger.debug('Sending webhook POST %s type:%s ', self.counter, type)
 
         async with self.session.post(self.webhook_url, data=data) as res:
             logger.debug('Recived response %s to request %s', res.status, self.counter)
-            self.counter += 1
 
             if logger.level == logging.DEBUG:
                 if res.status == SC_INVALID_JSON:
