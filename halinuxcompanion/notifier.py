@@ -14,6 +14,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 APP_NAME = "halinuxcompanion"
+HA = "Home Assistant"
 with resource_path(f"{APP_NAME}.resources", "home-assistant-favicon.png") as p:
     HA_ICON = str(p.absolute())
 
@@ -193,7 +194,7 @@ class Notifier:
             replace_id = self.tagtoid.get(tag, 0)
 
         notification.update({
-            "title": notification.get("title", ""),
+            "title": notification.get("title", HA),
             "actions": actions,
             "hints": hints,
             "timeout": timeout,
