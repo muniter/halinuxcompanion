@@ -16,6 +16,7 @@ class Sensor:
     """Standard sensor class"""
     attributes: dict = {}
     device_class: str = ""
+    state_class: str = ""
     icon: str
     name: str
     state: Union[str, int, float] = ""

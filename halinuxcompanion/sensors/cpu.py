@@ -15,6 +15,7 @@ if os.name == "posix":
     load_average = True
 
 Cpu.device_class = "power_factor"
+Cpu.state_class = "measurement"
 Cpu.icon = "mdi:cpu-64-bit"
 Cpu.name = "CPU Load"
 Cpu.state = 0

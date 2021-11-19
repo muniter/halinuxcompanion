@@ -11,6 +11,7 @@ Memory.attributes = {
 }
 
 Memory.device_class = "power_factor"
+Memory.state_class = "measurement"
 Memory.icon = "mdi:memory"
 Memory.name = "Memory Load"
 Memory.state = 0

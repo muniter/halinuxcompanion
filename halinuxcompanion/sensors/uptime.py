@@ -4,6 +4,7 @@ from datetime import datetime
 
 Uptime = Sensor()
 Uptime.device_class = "timestamp"
+Uptime.state_class = "measurement"
 Uptime.icon = "mdi:clock"
 Uptime.name = "Uptime"
 Uptime.state = 0
