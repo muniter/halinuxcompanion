@@ -1,7 +1,7 @@
 from halinuxcompanion.api import API
 
 import asyncio
-from aiohttp.web import Response
+from aiohttp.web import Response, json_response
 from aiohttp import ClientError
 from dbus_next.aio import ProxyInterface
 from dbus_next.signature import Variant
@@ -34,6 +34,17 @@ NOTIFY_LEVELS = {
 EVENTS_ENPOINT = {
     "closed": "/api/events/mobile_app_notification_cleared",
     "action": "/api/events/mobile_app_notification_action",
+}
+
+RESPONSES = {
+    "invalid_token": json.dumps({
+        "error": "push_token does not match",
+        "errorMessage": "Sent token that does not match to halinuxcompaion munrig"
+    }).encode('ascii'),
+    "ok": json.dumps({
+        "success": True,
+        "message": "Notification queued"
+    }).encode('ascii'),
 }
 
 EMPTY_DICT = {}
@@ -100,12 +111,12 @@ class Notifier:
         # Check if the notification is for this device
         if push_token != self.push_token:
             logger.error("Notification push_token does not match: %s != %s", push_token, self.push_token)
-            return Response(status=400)
+            return json_response(body=RESPONSES["invalid_token"], status=400)
 
         logger.info("Received notification request:%s", notification)
         asyncio.create_task(self.dbus_notify(self.notification_transform(notification)))
 
-        return Response(status=200, text="OK")
+        return json_response(body=RESPONSES["ok"], status=201)
 
     async def ha_event_trigger(self, event: str, action: str = "", notification: dict = {}) -> bool:
         """Function to trigger the Home Assistant event given an event type and notification dictionary.
