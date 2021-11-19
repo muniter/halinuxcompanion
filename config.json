@@ -27,8 +27,8 @@
     },
     "status": {
       "enabled": true,
-      "name": "CPU",
-      "icon": "mdi:memory"
+      "name": "Status",
+      "icon": "mdi:desktop-classic"
     }
   },
   "services": {

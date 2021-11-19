@@ -44,8 +44,8 @@ Now in your homeasssistant you will see a new device in th-**"mobile_app"** inte
     },
     "status": {
       "enabled": true,
-      "name": "CPU",
-      "icon": "mdi:memory"
+      "name": "Status",
+      "icon": "mdi:desktop-classic"
     }
   },
   "services": {
@@ -65,18 +65,19 @@ Now in your homeasssistant you will see a new device in th-**"mobile_app"** inte
 - [Home Assistant Native App Integration](https://developers.home-assistant.io/docs/api/native-app-integration)
 - [Home Assistant REST API](https://developers.home-assistant.io/docs/api/rest)
 - Asynchronous (because why not :smile:)
-  - HTTP Server (aiohttp) (Listen to POST from HA)
-  - Client (aiohttp) (POST to HA)
-  - Dbus interface (dbus_next)(Sending notifications and listening to notification actions from the desktop)
+  - HTTP Server (aiohttp): Listen to POST notification service call from Home Assistant
+  - Client (aiohttp): POST to Home Assistant api, sensors, events, etc
+  - Dbus interface (dbus_next): Sending notifications and listening to notification actions from the desktop, also listens to sleep, shutdown to update the state sensor
 
 ## Todo
 
-- [**Implement encryption**](https://developers.home-assistant.io/docs/api/native-app-integration/sending-data)
-- **Move sensors to MQTT**  
-  The reasoning for the change is the limitations of the API, naturally is expected that desktop and laptops would go offline and I would like for the sensors to reflect this new state. But if for some reason the application is unable to send this new state to Home Assistant the values of the sensors would be stuck. But if the app uses MQTT it can set will topics for the sensors to be updated when the client can't communicate with the server.
-- **Finish notifications funtionality**
-- **One day make it work with remote and local instance, for laptops roaming networks**
-- **Integrate to system bus to listen to sleep/shutdown/hibernate/reboot events**
+- [ ] [Implement encryption](https://developers.home-assistant.io/docs/api/native-app-integration/sending-data)
+- [ ] Move sensors to MQTT  
+    The reasoning for the change is the limitations of the API, naturally is expected that desktop and laptops would go offline and I would like for the sensors to reflect this new state. But if for some reason the application is unable to send this new state to Home Assistant the values of the sensors would be stuck. But if the app uses MQTT it can set will topics for the sensors to be updated when the client can't communicate with the server.
+- [ ] Finish notifications funtionality
+- [ ] One day make it work with remote and local instance, for laptops roaming networks
+- [x] Status sensors that listens to sleep, wakeup, shutdown, power_on~~
+- [ ] Add more sensors
 
 ## Features
 
@@ -84,6 +85,7 @@ Now in your homeasssistant you will see a new device in th-**"mobile_app"** inte
   - CPU
   - Memory
   - Uptime
+  - Status: Computer status, reflects if the computer went to sleep, wakes up, shutdown, turned on. The sensor is updated right before any of this events happens by listening for dbus signals.
 - Notifications:
   - Actions Callback (Triggers event in Home Assistant)
   - Actions Locally (If action contains)
