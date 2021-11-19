@@ -2,7 +2,7 @@ import json
 import platform
 import uuid
 import logging
-from typing import Tuple, TYPE_CHECKING
+from typing import Dict, Tuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from halinuxcompanion.api import API
@@ -40,6 +40,7 @@ class Companion:
     ha_url: str = "http://localhost:8123"
     ha_token: str
     url_program: str = ""
+    commands: Dict[str, dict] = {}
 
     def __init__(self, config: dict):
         # Load only allowed values
@@ -54,14 +55,15 @@ class Companion:
 
             # Enable notificaions
             try:
+                # TODO: This validation is very flacky, solve it by providing a default dict
                 if config["services"]["notifications"]["enabled"] is True:
                     self.notifier = True
                     self.app_data = {
                         "push_token": str(uuid.uuid1()),  # TODO: Random generation
                         "push_url": f"http://{self.computer_ip}:{self.computer_port}/notify",
                     }
-                if config["services"]["url_handler"]["enabled"] is True:
-                    self.url_program = config["services"]["url_handler"]["program"]
+                    self.url_program = config["services"]["notifications"].get("url_program", "")
+                    self.commands = config["services"]["notifications"].get("commands", {})
             except KeyError:
                 pass
 

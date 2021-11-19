@@ -1,4 +1,6 @@
-from halinuxcompanion.api import API
+from halinuxcompanion.companion import Companion
+from halinuxcompanion.api import API, Server
+from halinuxcompanion.dbus import Dbus
 
 import asyncio
 from aiohttp.web import Response, json_response
@@ -37,11 +39,13 @@ EVENTS_ENPOINT = {
 }
 
 RESPONSES = {
-    "invalid_token": json.dumps({
+    "invalid_token":
+    json.dumps({
         "error": "push_token does not match",
         "errorMessage": "Sent token that does not match to halinuxcompaion munrig"
     }).encode('ascii'),
-    "ok": json.dumps({
+    "ok":
+    json.dumps({
         "success": True,
         "message": "Notification queued"
     }).encode('ascii'),
@@ -67,18 +71,21 @@ class Notifier:
     api: API
     push_token: str
     url_program: str
+    commands: Dict[str, dict]
 
     def __init__(self):
         pass
 
-    async def init(self, dbus, api, webserverver, push_token, url_program) -> None:
+    async def init(self, dbus: Dbus, api: API, webserverver: Server, companion: Companion) -> None:
         """Function to initialize the notifier.
-        1. Handles creating the ProxyInterface to send notifications and listen to events.
+        1. Gets the dbus interface to send notifications and listen to events.
         2. Registers an http handler to the webserver for Home Assistant notifications.
         3. Register callbacks for dbus events (on_action_invoked and on_notification_closed).
         4. Keeps a reference to the API for firing events in Home Assistant.
         5. Sets the push_token used to check if the notification is for this device.
         6. Sets the url_program used to open urls.
+
+        :param dbus: The Dbus class abstraction
         """
         # Get the interface
         self.interface = await dbus.get_interface("org.freedesktop.Notifications")
@@ -91,8 +98,9 @@ class Notifier:
 
         # API and necessary data
         self.api = api
-        self.push_token = push_token
-        self.url_program = url_program
+        self.push_token = companion.app_data["push_token"]
+        self.url_program = companion.url_program
+        self.commands = companion.commands
 
     # Entrypoint to the Class logic
     async def on_ha_notification(self, request) -> Response:
@@ -107,14 +115,38 @@ class Notifier:
         """
         notification: dict = await request.json()
         push_token = notification.get("push_token")
+        logger.info("Received notification request:%s", notification)
 
         # Check if the notification is for this device
         if push_token != self.push_token:
             logger.error("Notification push_token does not match: %s != %s", push_token, self.push_token)
             return json_response(body=RESPONSES["invalid_token"], status=400)
 
-        logger.info("Received notification request:%s", notification)
-        asyncio.create_task(self.dbus_notify(self.notification_transform(notification)))
+        # Transform the notification to the format dbus uses
+        notification = self.notification_transform(notification)
+
+        if notification["is_command"]:
+            command_id = notification["message"]
+            command = self.commands.get(command_id, {})
+            if self.commands and command:
+                # It's not a notification, but a command, therefore no dbus_notify
+                name = command["name"]
+                command_args = command["command"]
+                logger.info("Received notification command: id:%s name:%s", command_id, name)
+                if command:
+                    logger.info("Scheduling notification command: %s", command_args)
+                    asyncio.create_task(
+                        asyncio.create_subprocess_exec(*command_args,
+                                                       stdout=asyncio.subprocess.DEVNULL,
+                                                       stderr=asyncio.subprocess.DEVNULL))
+                else:
+                    logger.error("Notification command not found: %s", command_id)
+
+            else:
+                # Got notificatoin command but none defined
+                logger.error("Received notification command %s, but no command is defined", command_id)
+        else:
+            asyncio.create_task(self.dbus_notify(self.notification_transform(notification)))
 
         return json_response(body=RESPONSES["ok"], status=201)
 
@@ -136,7 +168,9 @@ class Notifier:
                 **notification.get("event_actions", {}),
                 **notification["data"],
             }
-            data["actions"] = ""  # Replaced by event_actions
+            # Replaced by event_actions
+            if "actions" in notification:
+                del data["actions"]
 
             if event == "action":
                 data["action"] = action
@@ -166,7 +200,13 @@ class Notifier:
         icon: str = HA_ICON  # Icon path
         timeout: int = -1  # -1 means notification server decides how long to show
         replace_id: int = 0
-        if data:
+        if notification["message"].startswith("command_"):
+            # This is a command notification, short circuit the rest of the logic, no need to format the notification
+            # since it won't be stored nor emitted by dbus.
+            notification["is_command"] = True
+            return notification
+
+        elif data:
             # Actions
             # Home Assisnant actions require seome transformation
             # https://companion.home-assistant.io/docs/notifications/actionable-notifications

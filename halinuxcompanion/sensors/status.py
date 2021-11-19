@@ -24,26 +24,31 @@ Status.name = "Computer status"
 Status.unique_id = "status"
 Status.icon = "mdi:cpu-64-bit"
 
-Status.state = "on"
+Status.state = True
 Status.attributes = {"reason": "power_on"}
+
+sleep = {True: {"reason": "sleep"}, False: {"reason": "wake"}}
+shutdown = {True: {"reason": "power_off"}, False: {"reason": "power_on"}}
 
 
 async def on_prepare_for_sleep(self, v):
-    if v:
-        self.status = "off"
-        self.attributes = {"reason": "sleep"}
-    else:
-        self.status = "on"
-        self.attributes = {"reason": "wake"}
+    """Handler for system sleep and wake up from sleep events.
+    https://www.freedesktop.org/software/systemd/man/org.freedesktop.login1.html
+
+    :param v: True if going to sleep, False if waking up from it
+    """
+    self.state = not v
+    self.attributes = sleep[v]
 
 
 async def on_prepare_for_shutdown(self, v):
-    if v:
-        self.status = "off"
-        self.attributes = {"reason": "shutdown"}
-    else:
-        self.status = "on"
-        self.attributes = {"reason": "power_on"}
+    """Handler for system shutdown/reboot.
+    https://www.freedesktop.org/software/systemd/man/org.freedesktop.login1.html
+
+    :param v: True if shuting down, False if powering on.
+    """
+    self.state = not v
+    self.attributes = shutdown[v]
 
 
 def updater(self):

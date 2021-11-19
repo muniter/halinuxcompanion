@@ -91,7 +91,7 @@ async def main():
         # DBus session client to send desktop notifications and listen to signals
         # Notifier behavior: HA -> Webserver -> dbus ... dbus -> event_handler -> HA
         notifier = Notifier()
-        await notifier.init(bus, api, server, companion.app_data["push_token"], companion.url_program)
+        await notifier.init(bus, api, server, companion)
         await server.start()
 
     interval = companion.refresh_interval

@@ -1,5 +1,5 @@
 {
-  "ha_url": "http://localhost:8123",
+  "ha_url": "http://homeassistant.local:8123/",
   "ha_token": "mysuperlongtoken",
   "device_id": "computername",
   "device_name": "whatever you want can be left empty",
@@ -33,11 +33,18 @@
   },
   "services": {
     "notifications": {
-      "enabled": true
-    },
-    "url_handler": {
       "enabled": true,
-      "program": "xdg-open"
+      "url_program": "xdg-open",
+      "commands": {
+        "command_open_ha": {
+          "name": "Open Home Assistant",
+          "command": ["xdg-open", "http://homeassistant.local:8123/"]
+        },
+        "command_open_spotify": {
+          "name": "Open Spotify Flatpak",
+          "command": ["flatpak", "run", "com.spotify.Client"]
+        }
+      }
     }
   }
 }
