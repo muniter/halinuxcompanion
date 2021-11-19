@@ -53,6 +53,22 @@ Now in your Home Assistant you will see a new device in the **"mobile_app"** int
       "enabled": true,
       "url_program": "xdg-open",
       "commands": {
+        "command_suspend": {
+          "name": "Suspend",
+          "command": ["systemctl", "suspend"]
+        },
+        "command_poweroff": {
+          "name": "Power off",
+          "command": ["systemctl", "poweroff"]
+        },
+        "command_reboot": {
+          "name": "Reboot",
+          "command": ["systemctl", "reboot"]
+        },
+        "command_hibernate": {
+          "name": "Hibernate",
+          "command": ["systemctl", "hibernate"]
+        },
         "command_open_ha": {
           "name": "Open Home Assistant",
           "command": ["xdg-open", "http://homeassistant.local:8123/"]
@@ -102,3 +118,8 @@ Now in your Home Assistant you will see a new device in the **"mobile_app"** int
   - [Commands](https://companion.home-assistant.io/docs/notifications/notification-commands/)
   - Replacing, dismissing from Home Assistant **TODO**
   - Icon (Currently the Home Assistant icon is hard coded) **TODO**
+- Default commands:
+  - Suspend
+  - Power off
+  - Reboot
+  - Hibernate

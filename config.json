@@ -36,6 +36,22 @@
       "enabled": true,
       "url_program": "xdg-open",
       "commands": {
+        "command_suspend": {
+          "name": "Suspend",
+          "command": ["systemctl", "suspend"]
+        },
+        "command_poweroff": {
+          "name": "Power off",
+          "command": ["systemctl", "poweroff"]
+        },
+        "command_reboot": {
+          "name": "Reboot",
+          "command": ["systemctl", "reboot"]
+        },
+        "command_hibernate": {
+          "name": "Hibernate",
+          "command": ["systemctl", "hibernate"]
+        },
         "command_open_ha": {
           "name": "Open Home Assistant",
           "command": ["xdg-open", "http://homeassistant.local:8123/"]
