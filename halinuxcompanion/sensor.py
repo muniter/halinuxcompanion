@@ -71,19 +71,19 @@ class SensorManager:
     """Manages sensors registration, and updates to Home Assistant"""
     api: API
     update_counter: int = 0
-    sensors: Dict[str, Sensor] = {}
+    sensors: List[Sensor] = []
     dbus: Dbus
 
     def __init__(self, api: API, sensors: List[Sensor], dbus: Dbus) -> None:
         self.api = api
-        self.sensors = {sensor.unique_id: sensor for sensor in sensors}
+        self.sensors = sensors
         self.dbus = dbus
 
     async def register_sensors(self) -> bool:
         """Register all sensors with Home Assisntat
         If all have been registered successfully, register each sensor signals
         """
-        res = await asyncio.gather(*[self._register_sensor(s) for s in self.sensors.values()])
+        res = await asyncio.gather(*[self._register_sensor(s) for s in self.sensors])
         if all(res):
             # If all sensors registered successfully, register their signals
             await self.register_signals()
@@ -111,7 +111,7 @@ class SensorManager:
             logger.error('Sensor registration failed with status code:%s sensor:%s', res.status, sid)
             return False
 
-    async def update_sensors(self, sensors: Dict[str, Sensor] = {}) -> bool:
+    async def update_sensors(self, sensors: List[Sensor] = []) -> bool:
         """Update the given sensors with Home Assisntat
         If the update fails it's an error and it should be retried by the caller.
 
@@ -120,9 +120,10 @@ class SensorManager:
         """
         sensors = sensors or self.sensors
         self.update_counter += 1
-        data = {"type": "update_sensor_states", "data": [sensor.update() for sensor in sensors.values()]}
-        logger.info('Sensors update %s with sensors: %s', self.update_counter, sensors.keys())
-        logger.debug('Sensors update %s with sensors: %s payload: %s', self.update_counter, sensors.keys(), data)
+        data = {"type": "update_sensor_states", "data": [sensor.update() for sensor in sensors]}
+        sids = [sensor.unique_id for sensor in sensors]
+        logger.info('Sensors update %s with sensors: %s', self.update_counter, sids)
+        logger.debug('Sensors update %s with sensors: %s payload: %s', self.update_counter, sids, data)
         try:
             res = await self.api.webhook_post('update_sensors', data=json.dumps(data))
             if res.ok or res.status == SC_REGISTER_SENSOR:
@@ -148,13 +149,13 @@ class SensorManager:
         """
         logger.info('Signal %s received for sensor:%s', signal_alias, sensor.unique_id)
         await signal_handler(sensor, *args)
-        asyncio.create_task(self.update_sensors({sensor.unique_id: sensor}))
+        await self.update_sensors([sensor])
 
     async def register_signals(self) -> None:
         """Register all signals from all sensors.
         Each sensor defines signals with a name and callback, which is called by self._signal_handler
         """
-        for sensor in self.sensors.values():
+        for sensor in self.sensors:
             for signal_alias, signal_handler in sensor.signals.items():
                 callback = partial(self._signal_hanlder, sensor, signal_alias, signal_handler)
                 await self.dbus.register_signal(signal_alias, callback)
