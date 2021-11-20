@@ -247,6 +247,7 @@ class Notifier:
             "timeout": timeout,
             "icon": icon,  # TODO: Support custom icons
             "replace_id": replace_id,
+            "is_command": False,
         })
         logger.debug("Converted notification: %s", notification)
 
