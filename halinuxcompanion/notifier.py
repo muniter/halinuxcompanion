@@ -169,7 +169,7 @@ class Notifier:
                 **notification["data"],
             }
             # Replaced by event_actions
-            if "actions" in notification:
+            if "actions" in data:
                 del data["actions"]
 
             if event == "action":
