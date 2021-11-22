@@ -102,8 +102,10 @@ Now in your Home Assistant you will see a new device in the **"mobile_app"** int
 - [x] Status sensors that listens to sleep, wakeup, shutdown, power_on
 - [ ] Add more sensors
 - [x] Add notification commands
+- [ ] [Notifications Clearing](https://companion.home-assistant.io/docs/notifications/notifications-basic/#clearing)
+- [ ] [Notification Icon](https://companion.home-assistant.io/docs/notifications/notifications-basic/#notification-icon)
 
-## Features
+## Featres
 
 - Sensors:
   - CPU
@@ -112,12 +114,13 @@ Now in your Home Assistant you will see a new device in the **"mobile_app"** int
   - Status: Computer status, reflects if the computer went to sleep, wakes up, shutdown, turned on. The sensor is updated right before any of this events happens by listening for dbus signals.
 - Notifications:
   - [Actionable Notifications](https://companion.home-assistant.io/docs/notifications/actionable-notifications#building-actionable-notifications) (Triggers event in Home Assistant)
-      - [Local action handler using uri](https://companion.home-assistant.io/docs/notifications/actionable-notifications#uri-values)
+      - [Local action handler using URI](https://companion.home-assistant.io/docs/notifications/actionable-notifications#uri-values)
   - [Notification cleared/dismissed](https://companion.home-assistant.io/docs/notifications/notification-cleared/) (Triggers event in Home Assistant)
   - [Timeout](https://companion.home-assistant.io/docs/notifications/notifications-basic#notification-timeout)
   - [Commands](https://companion.home-assistant.io/docs/notifications/notification-commands/)
-  - Replacing, dismissing from Home Assistant **TODO**
-  - Icon (Currently the Home Assistant icon is hard coded) **TODO**
+  - [Replacing, dismissing from Home Assistant](https://companion.home-assistant.io/docs/notifications/notifications-basic/#replacing)
+    - [Clearing](https://companion.home-assistant.io/docs/notifications/notifications-basic/#clearing) **TODO**
+  - [Icon (Currently the Home Assistant icon is hard coded)](https://companion.home-assistant.io/docs/notifications/notifications-basic/#notification-icon) **TODO**
 - Default commands:
   - Suspend
   - Power off
