@@ -11,6 +11,7 @@ from importlib.resources import path as resource_path
 from collections import OrderedDict
 from typing import Dict, List
 import json
+import re
 import logging
 
 logger = logging.getLogger(__name__)
@@ -72,6 +73,7 @@ class Notifier:
     push_token: str
     url_program: str
     commands: Dict[str, dict]
+    ha_url: str
 
     def __init__(self):
         pass
@@ -101,6 +103,7 @@ class Notifier:
         self.push_token = companion.app_data["push_token"]
         self.url_program = companion.url_program
         self.commands = companion.commands
+        self.ha_url = companion.ha_url
 
     # Entrypoint to the Class logic
     async def on_ha_notification(self, request) -> Response:
@@ -222,7 +225,12 @@ class Notifier:
                 event_actions[f"action_{counter}_title"] = a["title"]
 
             notification["event_actions"] = event_actions
-            notification["default_action_uri"] = data.get("url", "") or data.get("clickAction", "")
+            # Uri for the default action
+            uri = data.get("url", "") or data.get("clickAction", "")
+            # check if uri starts with /lovelace or lovelace using regex
+            if uri and re.match(r"^/?lovelace", uri):
+                uri = f'{self.ha_url}/{uri.lstrip("/")}'
+            notification["default_action_uri"] = uri
 
             # Hints:
             # Importance -> Urgency

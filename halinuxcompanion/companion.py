@@ -67,6 +67,9 @@ class Companion:
             except KeyError:
                 pass
 
+            # Cleanup some of the values
+            self.ha_url = self.ha_url.rstrip("/")
+
     def registration_payload(self) -> dict:
         return {
             "device_id": self.device_id,
