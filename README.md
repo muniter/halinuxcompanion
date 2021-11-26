@@ -114,12 +114,12 @@ Now in your Home Assistant you will see a new device in the **"mobile_app"** int
   - Status: Computer status, reflects if the computer went to sleep, wakes up, shutdown, turned on. The sensor is updated right before any of this events happens by listening for dbus signals.
 - Notifications:
   - [Actionable Notifications](https://companion.home-assistant.io/docs/notifications/actionable-notifications#building-actionable-notifications) (Triggers event in Home Assistant)
-      - [Local action handler using URI](https://companion.home-assistant.io/docs/notifications/actionable-notifications#uri-values)
+      - [Local action handler using URI](https://companion.home-assistant.io/docs/notifications/actionable-notifications#uri-values): only `/lovelace` and `http(s)` uri supported so far.
   - [Notification cleared/dismissed](https://companion.home-assistant.io/docs/notifications/notification-cleared/) (Triggers event in Home Assistant)
   - [Timeout](https://companion.home-assistant.io/docs/notifications/notifications-basic#notification-timeout)
   - [Commands](https://companion.home-assistant.io/docs/notifications/notification-commands/)
-  - [Replacing, dismissing from Home Assistant](https://companion.home-assistant.io/docs/notifications/notifications-basic/#replacing)
-    - [Clearing](https://companion.home-assistant.io/docs/notifications/notifications-basic/#clearing) **TODO**
+  - [Replacing](https://companion.home-assistant.io/docs/notifications/notifications-basic/#replacing)
+  - [Clearing](https://companion.home-assistant.io/docs/notifications/notifications-basic/#clearing) **TODO**
   - [Icon (Currently the Home Assistant icon is hard coded)](https://companion.home-assistant.io/docs/notifications/notifications-basic/#notification-icon) **TODO**
 - Default commands:
   - Suspend
