@@ -271,6 +271,7 @@ class Notifier:
             from the format Home Assistant sends.
         :return: None
         """
+        logger.info("Sending dbus notification: %s", notification)
         id = await self.interface.call_notify(APP_NAME, notification["replace_id"], notification["icon"],
                                               notification["title"], notification["message"], notification["actions"],
                                               notification["hints"], notification["timeout"])
