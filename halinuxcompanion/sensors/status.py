@@ -20,7 +20,7 @@ if os.name == "posix":
 
 Status.type = "binary_sensor"
 Status.device_class = "power"
-Status.name = "Computer status"
+Status.name = "Status"
 Status.unique_id = "status"
 Status.icon = "mdi:cpu-64-bit"
 
