@@ -278,12 +278,11 @@ class Notifier:
             from the format Home Assistant sends.
         :return: None
         """
-        logger.info("Sending dbus notification: %s", notification)
+        logger.info("Sending dbus notification")
         id = await self.interface.call_notify(APP_NAME, notification["replace_id"], notification["icon"],
                                               notification["title"], notification["message"], notification["actions"],
                                               notification["hints"], notification["timeout"])
         logger.info("Dbus notification dispatched id:%s", id)
-        logger.debug("Dbus notification %s data: %s", id, notification)
 
         # History management: Add the new notification, and remove the oldest one.
         # Storage
