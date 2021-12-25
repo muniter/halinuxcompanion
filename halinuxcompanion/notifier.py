@@ -241,12 +241,19 @@ class Notifier:
                 urgency = NOTIFY_LEVELS.get(data["importance"], URGENCY_NORMAL)
             hints["urgency"] = urgency
 
-            # Timeout
-            timeout = data.get("duration", timeout)
+            # Timeout, convert milliseconds to seconds
+            if "timeout" in data:
+                timeout = int(data["timeout"] * 1000)
 
             # Replaces id:
             # Using the notification tag, check if it should replace an existing notification
             replace_id = self.tagtoid.get(tag, 0)
+
+            # Dismiss/clear notification
+            if notification["message"] == "clear_notification":
+                logger.info("Clearing notification: %s", notification)
+                # Replace the notification and hide it in 1 millisecond, workaround for dbus notifications
+                timeout = 1
 
         notification.update({
             "title": notification.get("title", HA),
