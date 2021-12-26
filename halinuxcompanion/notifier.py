@@ -243,7 +243,10 @@ class Notifier:
 
             # Timeout, convert milliseconds to seconds
             if "timeout" in data:
-                timeout = int(data["timeout"] * 1000)
+                try:
+                    timeout = int(data["timeout"]) * 1000
+                except ValueError:
+                    pass
 
             # Replaces id:
             # Using the notification tag, check if it should replace an existing notification
