@@ -4,6 +4,12 @@ Application to run on Linux desktop computer to provide sensors data to Home Ass
 
 ## How To
 
+### Requirements
+
+1. Python 3.10: An older version might work, haven't tested. Uses type annontations.
+
+### Instructions
+
 1. [Get a long-lived access token from your Home Assistant user](https://www.atomicha.com/home-assistant-how-to-generate-long-lived-access-token-part-1/)
 1. Install requirements `pip3 install -r requirements.txt`
 1. Modify `config.json` to match your setup and desired options.
