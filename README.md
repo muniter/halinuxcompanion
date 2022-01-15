@@ -6,7 +6,8 @@ Application to run on Linux desktop computer to provide sensors data to Home Ass
 
 ### Requirements
 
-1. Python 3.10: An older version might work, haven't tested. Uses type annontations.
+1. Python 3.10
+2. [requirements.txt](requirements.txt)
 
 ### Instructions
 
@@ -18,7 +19,7 @@ Application to run on Linux desktop computer to provide sensors data to Home Ass
 
 Now in your Home Assistant you will see a new device in the **"mobile_app"** integration, and there will be a new service to notify your Linux desktop. Notification actions work and the expected events will be fired in Home Assistant.
 
-## [Example configuration file](/config.json)
+## [Example configuration file](config.json)
 
 ```json
 {
@@ -125,9 +126,9 @@ Now in your Home Assistant you will see a new device in the **"mobile_app"** int
   - [Timeout](https://companion.home-assistant.io/docs/notifications/notifications-basic#notification-timeout)
   - [Commands](https://companion.home-assistant.io/docs/notifications/notification-commands/)
   - [Replacing](https://companion.home-assistant.io/docs/notifications/notifications-basic/#replacing)
-  - [Clearing](https://companion.home-assistant.io/docs/notifications/notifications-basic/#clearing) **TODO**
-  - [Icon (Currently the Home Assistant icon is hard coded)](https://companion.home-assistant.io/docs/notifications/notifications-basic/#notification-icon) **TODO**
-- Default commands:
+  - [Clearing](https://companion.home-assistant.io/docs/notifications/notifications-basic/#clearing)
+  - [Icon](https://companion.home-assistant.io/docs/notifications/notifications-basic/#notification-icon) **TODO**
+- Default commands (example config):
   - Suspend
   - Power off
   - Reboot
