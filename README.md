@@ -119,6 +119,8 @@ Now in your Home Assistant you will see a new device in the **"mobile_app"** int
   - Memory
   - Uptime
   - Status: Computer status, reflects if the computer went to sleep, wakes up, shutdown, turned on. The sensor is updated right before any of these events happen by listening to dbus signals.
+  - Battery Level
+  - Batter State
 - Notifications:
   - [Actionable Notifications](https://companion.home-assistant.io/docs/notifications/actionable-notifications#building-actionable-notifications) (Triggers event in Home Assistant)
       - [Local action handler using URI](https://companion.home-assistant.io/docs/notifications/actionable-notifications#uri-values): only relative style `/lovelace/myviwew` and `http(s)` uri supported so far.

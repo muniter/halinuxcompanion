@@ -7,6 +7,8 @@ from halinuxcompanion.sensors.cpu import Cpu
 from halinuxcompanion.sensors.memory import Memory
 from halinuxcompanion.sensors.uptime import Uptime
 from halinuxcompanion.sensors.status import Status
+from halinuxcompanion.sensors.battery_level import BatteryLevel
+from halinuxcompanion.sensors.battery_state import BatteryState
 
 import asyncio
 import json
@@ -71,7 +73,7 @@ async def main():
     bus = Dbus()
     await bus.init()
     # Register sensors
-    sensor_manager = SensorManager(api, [Cpu, Memory, Uptime, Status], bus)
+    sensor_manager = SensorManager(api, [Cpu, Memory, Uptime, Status, BatteryLevel, BatteryState], bus)
 
     # If the device can't be registered exit immidiately, nothing to do.
     ok, reg_data = await companion.register(api)
