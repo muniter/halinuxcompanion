@@ -12,13 +12,14 @@ logger = logging.getLogger("halinuxcompanion")
 
 CONFIG_KEYS = [("ha_url", True), ("ha_token", True), ("device_id", True), ("device_name", False),
                ("manufacturer", False), ("model", False), ("computer_ip", True), ("computer_port", True),
-               ("refresh_interval", False), ("services", True)]
+               ("refresh_interval", False), ("services", True), ("sensors", True)]
 
 
 class Companion:
     """Class encolsing a companion instance
     https://developers.home-assistant.io/docs/api/native-app-integration/setup
     """
+    # TODO: This class is just a huge pile of things
     # TODO: Revisit this device_id which must be unique, used for notification events
     device_id: str = platform.node()
     # TODO: Get the default values from something that helps sets releases.
@@ -41,6 +42,7 @@ class Companion:
     ha_token: str
     url_program: str = ""
     commands: Dict[str, dict] = {}
+    sensors: Dict[str, bool] = {}
 
     def __init__(self, config: dict):
         # Load only allowed values
@@ -66,6 +68,15 @@ class Companion:
                     self.commands = config["services"]["notifications"].get("commands", {})
             except KeyError:
                 pass
+
+            # Enabled sensors
+            from halinuxcompanion.sensors import __all__ as all_sensors
+            for name, sconfig in config["sensors"].items():
+                if name not in all_sensors:
+                    logger.error("Sensor %s doesn't exist", name)
+                    exit(1)
+                else:
+                    self.sensors[name] = sconfig["enabled"]
 
             # Cleanup some of the values
             self.ha_url = self.ha_url.rstrip("/")
