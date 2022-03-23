@@ -3,6 +3,7 @@ import psutil
 from datetime import datetime, timezone
 
 Uptime = Sensor()
+Uptime.config_name = "uptime"
 Uptime.device_class = "timestamp"
 Uptime.state_class = "measurement"
 Uptime.icon = "mdi:clock"

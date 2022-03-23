@@ -14,25 +14,41 @@ SC_REGISTER_SENSOR = 301
 
 class Sensor:
     """Standard sensor class"""
-    attributes: dict = {}
-    device_class: str = ""
-    state_class: str = ""
-    icon: str
-    name: str
-    state: Union[str, int, float] = ""
-    type: str
-    unique_id: str
-    unit_of_measurement: str = ""
-    state_class: str = ""
-    entity_category: str = ""
-    type: str
-    # Signal name (halinuxcompanion.dbus) and it's callback
-    signals: Dict[str, Callable] = {}
+    instances = []
+
+    def __init__(self):
+        self.config_name: str
+        self.attributes: dict = {}
+        self.device_class: str = ""
+        self.state_class: str = ""
+        self.icon: str
+        self.name: str
+        self.state: Union[str, int, float] = ""
+        self.type: str
+        self.unique_id: str
+        self.unit_of_measurement: str = ""
+        self.state_class: str = ""
+        self.entity_category: str = ""
+        self.type: str
+        # Signal name (halinuxcompanion.dbus) and it's callback
+        self.signals: Dict[str, Callable] = {}
+        Sensor.instances.append(self)
 
     # TODO: Should be async
     def updater(self) -> None:
         """To be called every time update is called"""
         pass
+
+    def update(self) -> dict:
+        """Payload to update the sensor"""
+        self.updater()
+        return {
+            "attributes": self.attributes,
+            "icon": self.icon,
+            "state": self.state,
+            "type": self.type,
+            "unique_id": self.unique_id,
+        }
 
     def register(self) -> dict:
         self.updater()
@@ -122,9 +138,9 @@ class SensorManager:
         sensors = sensors or self.sensors
         self.update_counter += 1
         data = {"type": "update_sensor_states", "data": [sensor.update() for sensor in sensors]}
-        sids = [sensor.unique_id for sensor in sensors]
-        logger.info('Sensors update %s with sensors: %s', self.update_counter, sids)
-        logger.debug('Sensors update %s with sensors: %s payload: %s', self.update_counter, sids, data)
+        snames = [sensor.config_name for sensor in sensors]
+        logger.info('Sensors update %s with sensors: %s', self.update_counter, snames)
+        logger.debug('Sensors update %s with sensors: %s payload: %s', self.update_counter, snames, data)
         try:
             res = await self.api.webhook_post('update_sensors', data=json.dumps(data))
             if res.ok or res.status == SC_REGISTER_SENSOR:

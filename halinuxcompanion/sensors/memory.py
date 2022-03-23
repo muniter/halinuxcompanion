@@ -3,6 +3,7 @@ from halinuxcompanion.sensor import Sensor
 import psutil
 
 Memory = Sensor()
+Memory.config_name = "memory"
 Memory.attributes = {
     "total": 0,
     "available": 0,

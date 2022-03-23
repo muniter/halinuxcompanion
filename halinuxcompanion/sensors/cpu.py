@@ -6,6 +6,7 @@ import os
 load_average: bool = False
 
 Cpu = Sensor()
+Cpu.config_name = "cpu"
 Cpu.attributes = {
     "cpu_count": psutil.cpu_count(logical=False),
     "cpu_logical_count": psutil.cpu_count(),
