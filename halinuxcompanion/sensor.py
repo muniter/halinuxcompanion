@@ -116,13 +116,13 @@ class SensorManager:
         :return: True if the registration was successful, False otherwise
         """
         data = {"data": sensor.register(), "type": "register_sensor"}
-        sid = sensor.unique_id
+        sname = sensor.config_name
         data = json.dumps(data)
-        logger.info('Registering sensor:%s payload:%s', sid, data)
-        res = await self.api.webhook_post('register_sensor', data=data)
+        logger.info("Registering sensor:%s payload:%s", sname, data)
+        res = await self.api.webhook_post("register_sensor", data=data)
 
         if res.ok or res.status == SC_REGISTER_SENSOR:
-            logger.info('Sensor registration successful: %s', sid)
+            logger.info("Sensor registration successful: %s", sname)
             return True
         else:
             logger.error('Sensor registration failed with status code:%s sensor:%s', res.status, sid)
