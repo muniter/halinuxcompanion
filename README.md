@@ -36,23 +36,27 @@ Now in your Home Assistant you will see a new device in the **"mobile_app"** int
   "sensors": {
     "cpu": {
       "enabled": true,
-      "name": "CPU",
-      "icon": "mdi:cpu-64-bit"
+      "name": "CPU"
     },
     "memory": {
       "enabled": true,
-      "name": "Memory Load",
-      "icon": "mdi:memory"
+      "name": "Memory Load"
     },
     "uptime": {
       "enabled": true,
-      "name": "Uptime",
-      "icon": "mdi:memory"
+      "name": "Uptime"
     },
     "status": {
       "enabled": true,
-      "name": "Status",
-      "icon": "mdi:desktop-classic"
+      "name": "Status"
+    },
+    "battery_level": {
+      "enabled": true,
+      "name": "Battery Level"
+    },
+    "battery_state": {
+      "enabled": true,
+      "name": "Battery State"
     }
   },
   "services": {
