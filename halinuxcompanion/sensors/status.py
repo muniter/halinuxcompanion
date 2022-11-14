@@ -7,18 +7,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-load_average: bool = False
-
 Status = Sensor()
 Status.config_name = "status"
-Status.attributes = {
-    "cpu_count": psutil.cpu_count(logical=False),
-    "cpu_logical_count": psutil.cpu_count(),
-}
-
-if os.name == "posix":
-    load_average = True
-
 Status.type = "binary_sensor"
 Status.device_class = "power"
 Status.name = "Status"
