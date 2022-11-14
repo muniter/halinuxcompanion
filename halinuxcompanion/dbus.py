@@ -28,23 +28,23 @@ SIGNALS = {
 INTERFACES = {
     "org.freedesktop.login1.Manager": {
         "type": "system",
-        "interface": "org.freedesktop.login1",
+        "service": "org.freedesktop.login1",
         "path": "/org/freedesktop/login1",
-        "proxy_interface": "org.freedesktop.login1.Manager"
+        "interface": "org.freedesktop.login1.Manager",
     },
     "org.freedesktop.Notifications": {
         "type": "session",
-        "interface": "org.freedesktop.Notifications",
+        "service": "org.freedesktop.Notifications",
         "path": "/org/freedesktop/Notifications",
-        "proxy_interface": "org.freedesktop.Notifications"
+        "interface": "org.freedesktop.Notifications",
     },
 }
 
 
-async def get_interface(bus, interface, path, proxy_interface):
-    introspection = await bus.introspect(interface, path)
-    proxy = bus.get_proxy_object(interface, path, introspection)
-    return proxy.get_interface(proxy_interface)
+async def get_interface(bus, service, path, interface) -> ProxyInterface:
+    introspection = await bus.introspect(service, path)
+    proxy = bus.get_proxy_object(service, path, introspection)
+    return proxy.get_interface(interface)
 
 
 class Dbus:
@@ -58,14 +58,14 @@ class Dbus:
 
     async def get_interface(self, name: str) -> ProxyInterface:
         i = INTERFACES[name]
-        type, interface, path, proxy_interface = i["type"], i["interface"], i["path"], i["proxy_interface"]
+        bus_type, service, path, interface = i["type"], i["service"], i["path"], i["interface"]
         iface = self.interfaces.get(name)
         if iface is None:
-            if type == "system":
+            if bus_type == "system":
                 bus = self.system
             else:
                 bus = self.session
-            iface = await get_interface(bus, interface, path, proxy_interface)
+            iface = await get_interface(bus, service, path, interface)
             self.interfaces[name] = iface
 
         return iface
