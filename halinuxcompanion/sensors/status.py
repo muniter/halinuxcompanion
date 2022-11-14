@@ -16,8 +16,9 @@ Status.unique_id = "status"
 Status.icon = "mdi:cpu-64-bit"
 
 Status.state = True
-Status.attributes = {"reason": "power_on"}
+Status.attributes = {"reason": "power_on", "idle": "unknown"}
 
+IDLE = {True: {"idle": "true"}, False: {"idle": "false"}}
 SLEEP = {True: {"reason": "sleep"}, False: {"reason": "wake"}}
 SHUTDOWN = {True: {"reason": "power_off"}, False: {"reason": "power_on"}}
 
@@ -42,6 +43,11 @@ async def on_prepare_for_shutdown(self, v):
     self.attributes = SHUTDOWN[v]
 
 
+async def screensaver_on_active_changed(self, v):
+    """Handler for session screensaver status changes."""
+    self.attributes.update(IDLE[v])
+
+
 def updater(self):
     # TODO: If computer is still on after "sleep", it should set to on
     self
@@ -52,4 +58,5 @@ Status.updater = MethodType(updater, Status)
 Status.signals = {
     "system.login_on_prepare_for_sleep": on_prepare_for_sleep,
     "system.login_on_prepare_for_shutdown": on_prepare_for_shutdown,
+    "session.screensaver_on_active_changed": screensaver_on_active_changed,
 }
