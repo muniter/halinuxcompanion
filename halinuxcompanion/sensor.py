@@ -1,8 +1,9 @@
+from types import MethodType
 from halinuxcompanion.api import API
 from halinuxcompanion.dbus import Dbus
 from aiohttp import ClientError
 from typing import Union, List, Dict, Callable
-from functools import partial
+from functools import partial, update_wrapper
 import json
 import logging
 import asyncio
@@ -153,7 +154,7 @@ class SensorManager:
 
         return False
 
-    async def _signal_hanlder(self, sensor: Sensor, signal_alias: str, signal_handler: Callable, *args) -> None:
+    async def _signal_handler(self, signal_alias: str, signal_handler: Callable, sensor: Sensor, *args) -> None:
         """Signal handler for the sensor manager
         Each sensor can have multiple signals, at the moment defined in halinuxcompanion.dbus, the callback provided for
         the signal is this function wrapped in a functools.partial this allows for the SensorManager to be in charge of
@@ -174,5 +175,6 @@ class SensorManager:
         """
         for sensor in self.sensors:
             for signal_alias, signal_handler in sensor.signals.items():
-                callback = partial(self._signal_hanlder, sensor, signal_alias, signal_handler)
+                callback = partial(self._signal_handler, signal_alias, signal_handler)
+                callback = MethodType(update_wrapper(callback, signal_handler), sensor)
                 await self.dbus.register_signal(signal_alias, callback)
