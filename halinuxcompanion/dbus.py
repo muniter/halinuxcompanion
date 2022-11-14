@@ -7,22 +7,18 @@ logger = logging.getLogger(__name__)
 
 SIGNALS = {
     "session.notification_on_action_invoked": {
-        "type": "session",
         "name": "on_action_invoked",
         "interface": "org.freedesktop.Notifications",
     },
     "session.notification_on_notification_closed": {
-        "type": "session",
         "name": "on_notification_closed",
         "interface": "org.freedesktop.Notifications",
     },
     "system.login_on_prepare_for_sleep": {
-        "type": "system",
         "name": "on_prepare_for_sleep",
         "interface": "org.freedesktop.login1.Manager",
     },
     "system.login_on_prepare_for_shutdown": {
-        "type": "system",
         "name": "on_prepare_for_shutdown",
         "interface": "org.freedesktop.login1.Manager",
     },
