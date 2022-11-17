@@ -31,7 +31,7 @@ Now in your Home Assistant you will see a new device in the **"mobile_app"** int
   "model": "Computer",
   "computer_ip": "192.168.1.15",
   "computer_port": 8400,
-  "refresh_interval": "15",
+  "refresh_interval": 15,
   "loglevel": "INFO",
   "sensors": {
     "cpu": {
