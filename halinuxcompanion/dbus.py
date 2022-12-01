@@ -14,6 +14,10 @@ SIGNALS = {
         "name": "on_notification_closed",
         "interface": "org.freedesktop.Notifications",
     },
+    "session.screensaver_on_active_changed": {
+        "name": "on_active_changed",
+        "interface": "org.freedesktop.ScreenSaver",
+    },
     "system.login_on_prepare_for_sleep": {
         "name": "on_prepare_for_sleep",
         "interface": "org.freedesktop.login1.Manager",
@@ -31,6 +35,12 @@ INTERFACES = {
         "service": "org.freedesktop.login1",
         "path": "/org/freedesktop/login1",
         "interface": "org.freedesktop.login1.Manager",
+    },
+    "org.freedesktop.ScreenSaver": {
+        "type": "session",
+        "service": "org.freedesktop.ScreenSaver",
+        "path": "/org/freedesktop/ScreenSaver",
+        "interface": "org.freedesktop.ScreenSaver",
     },
     "org.freedesktop.Notifications": {
         "type": "session",
