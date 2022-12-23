@@ -18,6 +18,10 @@ SIGNALS = {
         "name": "on_active_changed",
         "interface": "org.freedesktop.ScreenSaver",
     },
+    "session.gnome_screensaver_on_active_changed": {
+        "name": "on_active_changed",
+        "interface": "org.gnome.ScreenSaver",
+    },
     "system.login_on_prepare_for_sleep": {
         "name": "on_prepare_for_sleep",
         "interface": "org.freedesktop.login1.Manager",
@@ -41,6 +45,12 @@ INTERFACES = {
         "service": "org.freedesktop.ScreenSaver",
         "path": "/org/freedesktop/ScreenSaver",
         "interface": "org.freedesktop.ScreenSaver",
+    },
+    "org.gnome.ScreenSaver": {
+        "type": "session",
+        "service": "org.gnome.ScreenSaver",
+        "path": "/org/gnome/ScreenSaver",
+        "interface": "org.gnome.ScreenSaver",
     },
     "org.freedesktop.Notifications": {
         "type": "session",

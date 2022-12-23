@@ -59,4 +59,5 @@ Status.signals = {
     "system.login_on_prepare_for_sleep": on_prepare_for_sleep,
     "system.login_on_prepare_for_shutdown": on_prepare_for_shutdown,
     "session.screensaver_on_active_changed": screensaver_on_active_changed,
+    "session.gnome_screensaver_on_active_changed": screensaver_on_active_changed,
 }
