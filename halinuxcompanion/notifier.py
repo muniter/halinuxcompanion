@@ -90,7 +90,13 @@ class Notifier:
         :param dbus: The Dbus class abstraction
         """
         # Get the interface
-        self.interface = await dbus.get_interface("org.freedesktop.Notifications")
+        interface = await dbus.get_interface("org.freedesktop.Notifications")
+
+        if interface is None:
+            logger.warning("Could not find org.freedesktop.Notifications interface, disabling notification support.")
+            return
+
+        self.interface = interface
         # Setup dbus callbacks
         self.interface.on_action_invoked(self.on_action)
         self.interface.on_notification_closed(self.on_close)
