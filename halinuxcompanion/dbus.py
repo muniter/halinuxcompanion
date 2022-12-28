@@ -1,7 +1,7 @@
 from dbus_next.aio import MessageBus, ProxyInterface
 from dbus_next import BusType
 from dbus_next.errors import DBusError
-from typing import Callable, Union
+from typing import Callable, Optional
 import logging
 
 logger = logging.getLogger(__name__)
@@ -62,7 +62,7 @@ INTERFACES = {
 }
 
 
-async def get_interface(bus, service, path, interface) -> Union[ProxyInterface, None]:
+async def get_interface(bus, service, path, interface) -> Optional[ProxyInterface]:
     try:
         introspection = await bus.introspect(service, path)
         proxy = bus.get_proxy_object(service, path, introspection)
@@ -80,7 +80,7 @@ class Dbus:
         self.system = await MessageBus(bus_type=BusType.SYSTEM).connect()
         self.session = await MessageBus(bus_type=BusType.SESSION).connect()
 
-    async def get_interface(self, name: str) -> Union[ProxyInterface, None]:
+    async def get_interface(self, name: str) -> Optional[ProxyInterface]:
         i = INTERFACES[name]
         bus_type, service, path, interface = i["type"], i["service"], i["path"], i["interface"]
         iface = self.interfaces.get(name)
