@@ -1,6 +1,7 @@
 from dbus_next.aio import MessageBus, ProxyInterface
 from dbus_next import BusType
-from typing import Callable
+from dbus_next.errors import DBusError
+from typing import Callable, Optional
 import logging
 
 logger = logging.getLogger(__name__)
@@ -17,6 +18,10 @@ SIGNALS = {
     "session.screensaver_on_active_changed": {
         "name": "on_active_changed",
         "interface": "org.freedesktop.ScreenSaver",
+    },
+    "session.gnome_screensaver_on_active_changed": {
+        "name": "on_active_changed",
+        "interface": "org.gnome.ScreenSaver",
     },
     "system.login_on_prepare_for_sleep": {
         "name": "on_prepare_for_sleep",
@@ -42,6 +47,12 @@ INTERFACES = {
         "path": "/org/freedesktop/ScreenSaver",
         "interface": "org.freedesktop.ScreenSaver",
     },
+    "org.gnome.ScreenSaver": {
+        "type": "session",
+        "service": "org.gnome.ScreenSaver",
+        "path": "/org/gnome/ScreenSaver",
+        "interface": "org.gnome.ScreenSaver",
+    },
     "org.freedesktop.Notifications": {
         "type": "session",
         "service": "org.freedesktop.Notifications",
@@ -51,10 +62,13 @@ INTERFACES = {
 }
 
 
-async def get_interface(bus, service, path, interface) -> ProxyInterface:
-    introspection = await bus.introspect(service, path)
-    proxy = bus.get_proxy_object(service, path, introspection)
-    return proxy.get_interface(interface)
+async def get_interface(bus, service, path, interface) -> Optional[ProxyInterface]:
+    try:
+        introspection = await bus.introspect(service, path)
+        proxy = bus.get_proxy_object(service, path, introspection)
+        return proxy.get_interface(interface)
+    except DBusError:
+        return None
 
 
 class Dbus:
@@ -66,7 +80,7 @@ class Dbus:
         self.system = await MessageBus(bus_type=BusType.SYSTEM).connect()
         self.session = await MessageBus(bus_type=BusType.SESSION).connect()
 
-    async def get_interface(self, name: str) -> ProxyInterface:
+    async def get_interface(self, name: str) -> Optional[ProxyInterface]:
         i = INTERFACES[name]
         bus_type, service, path, interface = i["type"], i["service"], i["path"], i["interface"]
         iface = self.interfaces.get(name)
@@ -76,7 +90,8 @@ class Dbus:
             else:
                 bus = self.session
             iface = await get_interface(bus, service, path, interface)
-            self.interfaces[name] = iface
+            if iface is not None:
+                self.interfaces[name] = iface
 
         return iface
 
@@ -84,6 +99,9 @@ class Dbus:
         """Register a signal handler"""
         iface_name, signal_name = SIGNALS[signal_alias]["interface"], SIGNALS[signal_alias]["name"]
         iface = await self.get_interface(iface_name)
-        getattr(iface, signal_name)(callback)
-        logger.info("Registered signal callback for interface:%s, signal:%s", iface_name, signal_name)
-        SIGNALS["subscribed"].append((signal_alias, callback))
+        if iface is not None:
+            getattr(iface, signal_name)(callback)
+            logger.info("Registered signal callback for interface:%s, signal:%s", iface_name, signal_name)
+            SIGNALS["subscribed"].append((signal_alias, callback))
+        else:
+            logger.warning("Could not register signal callback for interface:%s, signal:%s", iface_name, signal_name)

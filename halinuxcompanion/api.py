@@ -2,14 +2,14 @@ from .companion import Companion
 
 import logging
 from aiohttp import (web, ClientSession, ClientResponse)
-from typing import Union
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
 SC_INVALID_JSON = 400
 SC_MOBILE_COMPONENT_NOT_LOADED = 404
 SC_INTEGRATION_DELETED = 410
-SESSION: Union[ClientSession, None] = None
+SESSION: Optional[ClientSession] = None
 
 
 class API:
