@@ -33,6 +33,10 @@
     "battery_state": {
       "enabled": true,
       "name": "Battery State"
+    },
+    "camera_state": {
+      "enabled": true,
+      "name": "Camera State"
     }
   },
   "services": {
