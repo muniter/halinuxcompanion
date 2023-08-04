@@ -58,6 +58,10 @@ Now in your Home Assistant you will see a new device in the **"mobile_app"** int
     "battery_state": {
       "enabled": true,
       "name": "Battery State"
+    },
+    "camera_state": {
+      "enabled": true,
+      "name": "Camera State"
     }
   },
   "services": {
