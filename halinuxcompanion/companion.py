@@ -32,6 +32,7 @@ class Companion:
     os_name: str = platform.system()
     os_version: str = platform.release()
     # TODO: Encryption requires https://github.com/jedisct1/libsodium
+    encryption_key: str = "NOT IMPLEMENTED"
     supports_encryption: bool = False
     app_data: dict = {}
     notifier: bool = False
