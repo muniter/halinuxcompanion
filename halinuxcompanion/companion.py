@@ -16,7 +16,7 @@ CONFIG_KEYS = [("ha_url", True), ("ha_token", True), ("device_id", True), ("devi
 
 
 class Companion:
-    """Class encolsing a companion instance
+    """Class encolsing a companion instance ⁧
     https://developers.home-assistant.io/docs/api/native-app-integration/setup
     """
     # TODO: This class is just a huge pile of things
