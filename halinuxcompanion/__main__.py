@@ -73,10 +73,11 @@ async def main():
 
     # If the device can't be registered exit immidiately, nothing to do.
     ok, reg_data = await companion.register(api)
-    api.process_registration_data(reg_data)
     if not ok:
         logger.critical("Device registration failed, exiting now")
         exit(1)
+
+    api.process_registration_data(reg_data)
 
     # If sensors can't be registered exit immidiately, nothing to do.
     if not await sensor_manager.register_sensors():

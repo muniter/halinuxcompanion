@@ -47,7 +47,7 @@ class API:
         self.counter += 1
         logger.debug('Sending webhook POST %s type:%s ', self.counter, type)
 
-        async with self.session.post(self.webhook_url, data=data, verify_ssl=False) as res:
+        async with self.session.post(self.webhook_url, data=data) as res:
             logger.debug('Recived response %s to request %s', res.status, self.counter)
 
             if logger.level == logging.DEBUG:

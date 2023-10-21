@@ -111,5 +111,6 @@ class Companion:
             data = await res.json()
             return True, data
         else:
-            logger.critical('Device Registration failed with status code %s', res.status)
+            text = await res.text()
+            logger.critical('Device Registration failed with status code %s, text: %s', res.status, text)
             return False, {}
