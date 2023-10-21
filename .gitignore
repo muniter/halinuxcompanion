@@ -3,3 +3,4 @@ __pycache__/
 config/
 my-config.json
 config.json
+ha_config/
