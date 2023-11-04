@@ -17,7 +17,6 @@ def setup_companion() -> Companion:
 
 def test_status_updater():
     Status.updater()
-    assert True
 
 
 def test_setup():
