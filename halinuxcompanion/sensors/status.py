@@ -49,6 +49,7 @@ async def screensaver_on_active_changed(self, v):
 
 
 def updater(self):
+    # Updated only by signals
     pass
 
 
