@@ -20,7 +20,7 @@ jobs:
         python-version: '3.11'
         cache: 'pip'
     - run: pip install -r requirements.txt
-    - run: pytest --cov=halinuxcompanion --cov-report=xml:coverage.xml --cov-report=term
+    - run: tox -e py
     - name: SonarCloud Scan
       uses: sonarsource/sonarcloud-github-action@master
       env:
