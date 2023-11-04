@@ -2,7 +2,10 @@
 version: '3.7'
 services:
   ha:
-    image: homeassistant/home-assistant:stable
+    image: custom-ha:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: test_ha
     ports:
       - 9999:8123
@@ -10,5 +13,5 @@ services:
       - TZ=America/Panama
       - SECRET=the_secret
     volumes:
-      - ./ha_config:/config
-
+      - ./tests/backup.tar.gz:/tmp/backup.tar.gz
+    #
