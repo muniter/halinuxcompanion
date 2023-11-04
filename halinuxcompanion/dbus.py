@@ -6,14 +6,16 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+NOTIFICATIONS_INTERFACE = "org.freedesktop.Notifications"
+
 SIGNALS = {
     "session.notification_on_action_invoked": {
         "name": "on_action_invoked",
-        "interface": "org.freedesktop.Notifications",
+        "interface": NOTIFICATIONS_INTERFACE,
     },
     "session.notification_on_notification_closed": {
         "name": "on_notification_closed",
-        "interface": "org.freedesktop.Notifications",
+        "interface": NOTIFICATIONS_INTERFACE,
     },
     "session.screensaver_on_active_changed": {
         "name": "on_active_changed",
@@ -53,11 +55,11 @@ INTERFACES = {
         "path": "/org/gnome/ScreenSaver",
         "interface": "org.gnome.ScreenSaver",
     },
-    "org.freedesktop.Notifications": {
+    NOTIFICATIONS_INTERFACE: {
         "type": "session",
-        "service": "org.freedesktop.Notifications",
+        "service": NOTIFICATIONS_INTERFACE,
         "path": "/org/freedesktop/Notifications",
-        "interface": "org.freedesktop.Notifications",
+        "interface": NOTIFICATIONS_INTERFACE,
     },
 }
 
