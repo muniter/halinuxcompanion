@@ -49,8 +49,6 @@ async def screensaver_on_active_changed(self, v):
 
 
 def updater(self):
-    # TODO: If computer is still on after "sleep", it should set to on
-    self
     pass
 
 
