@@ -142,15 +142,11 @@ class Notifier:
                 name = command["name"]
                 command_args = command["command"]
                 logger.info("Received notification command: id:%s name:%s", command_id, name)
-                if command:
-                    logger.info("Scheduling notification command: %s", command_args)
-                    asyncio.create_task(
-                        asyncio.create_subprocess_exec(*command_args,
-                                                       stdout=asyncio.subprocess.DEVNULL,
-                                                       stderr=asyncio.subprocess.DEVNULL))
-                else:
-                    logger.error("Notification command not found: %s", command_id)
-
+                logger.info("Scheduling notification command: %s", command_args)
+                asyncio.create_task(
+                    asyncio.create_subprocess_exec(*command_args,
+                                                   stdout=asyncio.subprocess.DEVNULL,
+                                                   stderr=asyncio.subprocess.DEVNULL))
             else:
                 # Got notificatoin command but none defined
                 logger.error("Received notification command %s, but no command is defined", command_id)
