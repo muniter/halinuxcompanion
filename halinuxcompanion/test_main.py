@@ -12,17 +12,6 @@ def get_config() -> dict:
         return data
 
 
-class DbusStub:
-    def get_interface(self, interface):
-        return DbusStub()
-
-    def on_action_invoked(self, callback):
-        pass
-
-    def on_notification_closed(self, callback):
-        pass
-
-
 class RequestStub:
     def __init__(self, json):
         self.__json = json
@@ -80,6 +69,7 @@ async def test_notifier():
         },
     }
     result = await notifier.on_ha_notification(RequestStub(payload))
+    assert result is None
 
 
 def test_setup():
