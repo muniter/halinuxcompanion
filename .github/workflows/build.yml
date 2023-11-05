@@ -21,7 +21,7 @@ jobs:
         cache: 'pip'
     - run: pip install -r requirements.txt
     - run: coverage run --concurrency=greenlet -m pytest .
-    - run: coverage xml
+    - run: coverage xml --omit halinuxcompanion/test_main.py  
     - name: SonarCloud Scan
       uses: sonarsource/sonarcloud-github-action@master
       env:
