@@ -7,6 +7,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 NOTIFICATIONS_INTERFACE = "org.freedesktop.Notifications"
+LOGIN_INTERFACE = "org.freedesktop.login1.Manager"
+SCREENSAVER_INTERFACE = "org.freedesktop.ScreenSaver"
+SCREENSAVER_GNOME_INTERFACE = "org.gnome.ScreenSaver"
 
 SIGNALS = {
     "session.notification_on_action_invoked": {
@@ -19,41 +22,41 @@ SIGNALS = {
     },
     "session.screensaver_on_active_changed": {
         "name": "on_active_changed",
-        "interface": "org.freedesktop.ScreenSaver",
+        "interface": SCREENSAVER_INTERFACE,
     },
     "session.gnome_screensaver_on_active_changed": {
         "name": "on_active_changed",
-        "interface": "org.gnome.ScreenSaver",
+        "interface": SCREENSAVER_GNOME_INTERFACE,
     },
     "system.login_on_prepare_for_sleep": {
         "name": "on_prepare_for_sleep",
-        "interface": "org.freedesktop.login1.Manager",
+        "interface": LOGIN_INTERFACE,
     },
     "system.login_on_prepare_for_shutdown": {
         "name": "on_prepare_for_shutdown",
-        "interface": "org.freedesktop.login1.Manager",
+        "interface": LOGIN_INTERFACE,
     },
     "subscribed": [],
 }
 
 INTERFACES = {
-    "org.freedesktop.login1.Manager": {
+    LOGIN_INTERFACE: {
         "type": "system",
         "service": "org.freedesktop.login1",
         "path": "/org/freedesktop/login1",
-        "interface": "org.freedesktop.login1.Manager",
+        "interface": LOGIN_INTERFACE,
     },
-    "org.freedesktop.ScreenSaver": {
+    SCREENSAVER_INTERFACE: {
         "type": "session",
-        "service": "org.freedesktop.ScreenSaver",
+        "service": SCREENSAVER_INTERFACE,
         "path": "/org/freedesktop/ScreenSaver",
-        "interface": "org.freedesktop.ScreenSaver",
+        "interface": SCREENSAVER_INTERFACE,
     },
-    "org.gnome.ScreenSaver": {
+    SCREENSAVER_GNOME_INTERFACE: {
         "type": "session",
-        "service": "org.gnome.ScreenSaver",
+        "service": SCREENSAVER_GNOME_INTERFACE,
         "path": "/org/gnome/ScreenSaver",
-        "interface": "org.gnome.ScreenSaver",
+        "interface": SCREENSAVER_GNOME_INTERFACE,
     },
     NOTIFICATIONS_INTERFACE: {
         "type": "session",
