@@ -76,6 +76,7 @@ class Notifier:
     ha_url: str
 
     def __init__(self):
+        # The initialization is done in the init function
         pass
 
     async def init(self, dbus: Dbus, api: API, webserverver: Server, companion: Companion) -> None:
