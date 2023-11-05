@@ -69,7 +69,7 @@ async def test_notifier():
         },
     }
     result = await notifier.on_ha_notification(RequestStub(payload))
-    assert result is None
+    assert result is not None
 
 
 def test_setup():
