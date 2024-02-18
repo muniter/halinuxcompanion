@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 Uptime = Sensor()
 Uptime.config_name = "uptime"
 Uptime.device_class = "timestamp"
-Uptime.state_class = "measurement"
+Uptime.state_class = ""
 Uptime.icon = "mdi:clock"
 Uptime.name = "Uptime"
 Uptime.state = 0
