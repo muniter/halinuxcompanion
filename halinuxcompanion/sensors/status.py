@@ -16,7 +16,7 @@ Status.unique_id = "status"
 Status.icon = "mdi:cpu-64-bit"
 
 Status.state = True
-Status.attributes = {"reason": "power_on", "idle": "unknown"}
+Status.attributes = {"reason": "power_on", "idle": "false"}
 
 IDLE = {True: {"idle": "true"}, False: {"idle": "false"}}
 SLEEP = {True: {"reason": "sleep"}, False: {"reason": "wake"}}
