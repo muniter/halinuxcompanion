@@ -68,7 +68,7 @@ async def main():
     bus = Dbus()
     await bus.init()
     # Register sensors
-    sensors = list(filter(lambda x: companion.sensors[x.config_name], Sensor.instances))
+    sensors = list(filter(lambda x: x.config_name in companion.sensors, Sensor.instances))
     sensor_manager = SensorManager(api, sensors, bus)
 
     # If the device can't be registered exit immidiately, nothing to do.
@@ -100,5 +100,5 @@ async def main():
         await asyncio.sleep(interval)
 
 
-loop = asyncio.get_event_loop()
+loop = asyncio.new_event_loop()
 loop.run_until_complete(main())
