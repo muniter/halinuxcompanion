@@ -1,4 +1,4 @@
-from halinuxcompanion.companion import Companion
+from halinuxcompanion.companion import CommandConfig, Companion
 from halinuxcompanion.api import API, Server
 from halinuxcompanion.dbus import Dbus
 
@@ -40,16 +40,15 @@ EVENTS_ENPOINT = {
 }
 
 RESPONSES = {
-    "invalid_token":
-    json.dumps({
-        "error": "push_token does not match",
-        "errorMessage": "Sent token that does not match to halinuxcompaion munrig"
-    }).encode('ascii'),
-    "ok":
-    json.dumps({
-        "success": True,
-        "message": "Notification queued"
-    }).encode('ascii'),
+    "invalid_token": json.dumps(
+        {
+            "error": "push_token does not match",
+            "errorMessage": "Sent token that does not match to halinuxcompaion munrig",
+        }
+    ).encode("ascii"),
+    "ok": json.dumps({"success": True, "message": "Notification queued"}).encode(
+        "ascii"
+    ),
 }
 
 EMPTY_DICT = {}
@@ -65,21 +64,26 @@ class Notifier:
     6. When dbus events are generated, it emits the event to Home Assistant (if appropieate).
     7. Some action events perform a local action like opening a url.
     """
+
     # Only keeping the last 20 notifications and popping everytime a new one is added
-    history: OrderedDict[int, dict] = OrderedDict((x, EMPTY_DICT) for x in range(-1, -21, -1))
+    history: OrderedDict[int, dict] = OrderedDict(
+        (x, EMPTY_DICT) for x in range(-1, -21, -1)
+    )
     tagtoid: Dict[str, int] = {}  # Lookup id from tag
     interface: ProxyInterface
     api: API
     push_token: str
     url_program: str
-    commands: Dict[str, dict]
+    commands: Dict[str, CommandConfig]
     ha_url: str
 
     def __init__(self):
         # The initialization is done in the init function
         pass
 
-    async def init(self, dbus: Dbus, api: API, webserverver: Server, companion: Companion) -> None:
+    async def init(
+        self, dbus: Dbus, api: API, webserverver: Server, companion: Companion
+    ) -> None:
         """Function to initialize the notifier.
         1. Gets the dbus interface to send notifications and listen to events.
         2. Registers an http handler to the webserver for Home Assistant notifications.
@@ -94,7 +98,9 @@ class Notifier:
         interface = await dbus.get_interface("org.freedesktop.Notifications")
 
         if interface is None:
-            logger.warning("Could not find org.freedesktop.Notifications interface, disabling notification support.")
+            logger.warning(
+                "Could not find org.freedesktop.Notifications interface, disabling notification support."
+            )
             return
 
         self.interface = interface
@@ -103,7 +109,7 @@ class Notifier:
         self.interface.on_notification_closed(self.on_close)
 
         # Setup http server route handler for incoming notifications
-        webserverver.app.router.add_route('POST', '/notify', self.on_ha_notification)
+        webserverver.app.router.add_route("POST", "/notify", self.on_ha_notification)
 
         # API and necessary data
         self.api = api
@@ -129,7 +135,11 @@ class Notifier:
 
         # Check if the notification is for this device
         if push_token != self.push_token:
-            logger.error("Notification push_token does not match: %s != %s", push_token, self.push_token)
+            logger.error(
+                "Notification push_token does not match: %s != %s",
+                push_token,
+                self.push_token,
+            )
             return json_response(body=RESPONSES["invalid_token"], status=400)
 
         # Transform the notification to the format dbus uses
@@ -137,26 +147,36 @@ class Notifier:
 
         if notification["is_command"]:
             command_id = notification["message"]
-            command = self.commands.get(command_id, {})
-            if self.commands and command:
+            command = self.commands.get(command_id)
+            if command:
                 # It's not a notification, but a command, therefore no dbus_notify
-                name = command["name"]
-                command_args = command["command"]
-                logger.info("Received notification command: id:%s name:%s", command_id, name)
-                logger.info("Scheduling notification command: %s", command_args)
+                logger.info(
+                    "Received notification command: id:%s name:%s", command_id, command.name
+                )
+                logger.info("Scheduling notification command: %s", command.command)
                 asyncio.create_task(
-                    asyncio.create_subprocess_exec(*command_args,
-                                                   stdout=asyncio.subprocess.DEVNULL,
-                                                   stderr=asyncio.subprocess.DEVNULL))
+                    asyncio.create_subprocess_exec(
+                        *command.command,
+                        stdout=asyncio.subprocess.DEVNULL,
+                        stderr=asyncio.subprocess.DEVNULL,
+                    )
+                )
             else:
                 # Got notificatoin command but none defined
-                logger.error("Received notification command %s, but no command is defined", command_id)
+                logger.error(
+                    "Received notification command %s, but no command is defined",
+                    command_id,
+                )
         else:
-            asyncio.create_task(self.dbus_notify(self.notification_transform(notification)))
+            asyncio.create_task(
+                self.dbus_notify(self.notification_transform(notification))
+            )
 
         return json_response(body=RESPONSES["ok"], status=201)
 
-    async def ha_event_trigger(self, event: str, action: str = "", notification: dict = {}) -> bool:
+    async def ha_event_trigger(
+        self, event: str, action: str = "", notification: dict = {}
+    ) -> bool:
         """Function to trigger the Home Assistant event given an event type and notification dictionary.
         Actions are first handled in on_action which decides wether to emit the event or not.
 
@@ -183,7 +203,12 @@ class Notifier:
 
             try:
                 res = await self.api.post(endpoint, json.dumps(data))
-                logger.info("Sent Home Assistant event:%s data:%s response:%s", endpoint, data, res.status)
+                logger.info(
+                    "Sent Home Assistant event:%s data:%s response:%s",
+                    endpoint,
+                    data,
+                    res.status,
+                )
                 return True
             except ClientError as e:
                 logger.error("Error sending Home Assistant event: %s", e)
@@ -219,7 +244,9 @@ class Notifier:
             # https://people.gnome.org/~mccann/docs/notification-spec/notification-spec-latest.html#basic-design
 
             # Dbus notification structure [id, name, id, name, ...]
-            event_actions = {}  # Format the actions as necessary for on_close an on_action events
+            event_actions = (
+                {}
+            )  # Format the actions as necessary for on_close an on_action events
             counter = 1
             for a in data.get("actions", []):
                 actions.extend([a["action"], a["title"]])
@@ -261,15 +288,17 @@ class Notifier:
                 # Replace the notification and hide it in 1 millisecond, workaround for dbus notifications
                 timeout = 1
 
-        notification.update({
-            "title": notification.get("title", HA),
-            "actions": actions,
-            "hints": hints,
-            "timeout": timeout,
-            "icon": icon,  # TODO: Support custom icons
-            "replace_id": replace_id,
-            "is_command": False,
-        })
+        notification.update(
+            {
+                "title": notification.get("title", HA),
+                "actions": actions,
+                "hints": hints,
+                "timeout": timeout,
+                "icon": icon,  # TODO: Support custom icons
+                "replace_id": replace_id,
+                "is_command": False,
+            }
+        )
         logger.debug("Converted notification: %s", notification)
 
         return notification
@@ -285,9 +314,16 @@ class Notifier:
         :return: None
         """
         logger.info("Sending dbus notification")
-        id = await self.interface.call_notify(APP_NAME, notification["replace_id"], notification["icon"],
-                                              notification["title"], notification["message"], notification["actions"],
-                                              notification["hints"], notification["timeout"])
+        id = await self.interface.call_notify(
+            APP_NAME,
+            notification["replace_id"],
+            notification["icon"],
+            notification["title"],
+            notification["message"],
+            notification["actions"],
+            notification["hints"],
+            notification["timeout"],
+        )
         logger.info("Dbus notification dispatched id:%s", id)
 
         # History management: Add the new notification, and remove the oldest one.
@@ -311,10 +347,14 @@ class Notifier:
         :param id: The dbus id of the notification
         :param action: The action that was invoked
         """
-        logger.info("Notification action dbus event received: id:%s, action:%s", id, action)
+        logger.info(
+            "Notification action dbus event received: id:%s, action:%s", id, action
+        )
         notification: dict = self.history.get(id, {})
         if not notification:
-            logger.info("No notification found for id:%s, doesn't belong to this applicaton", id)
+            logger.info(
+                "No notification found for id:%s, doesn't belong to this applicaton", id
+            )
             return
 
         actions: List[dict] = notification["data"].get("actions", {})
@@ -326,14 +366,20 @@ class Notifier:
                 uri = notification.get("default_action_uri", "")
                 emit_event = False
             else:
-                uri = next(filter(lambda dic: dic["action"] == action, actions)).get("uri", "")
+                uri = next(filter(lambda dic: dic["action"] == action, actions)).get(
+                    "uri", ""
+                )
 
             if uri.startswith("http") and self.url_program != "":
-                asyncio.create_task(asyncio.create_subprocess_exec(self.url_program, uri))
+                asyncio.create_task(
+                    asyncio.create_subprocess_exec(self.url_program, uri)
+                )
                 logger.info("Launched action:%s uri:%s", action, uri)
 
             if emit_event:
-                asyncio.create_task(self.ha_event_trigger("action", action, notification))
+                asyncio.create_task(
+                    self.ha_event_trigger("action", action, notification)
+                )
 
     async def on_close(self, id: int, reason: str) -> None:
         """Function to handle the dbus notification close event
@@ -342,9 +388,15 @@ class Notifier:
         :param id: The dbus id of the notification
         :param reason: The reason the notification was closed
         """
-        logger.info("Notification closed dbus event received: id:%s, reason:%s", id, reason)
+        logger.info(
+            "Notification closed dbus event received: id:%s, reason:%s", id, reason
+        )
         notification = self.history.get(id, {})
         if notification:
-            asyncio.create_task(self.ha_event_trigger(event="closed", notification=notification))
+            asyncio.create_task(
+                self.ha_event_trigger(event="closed", notification=notification)
+            )
         else:
-            logger.info("No notification found for id:%s, doesn't belong to this applicaton", id)
+            logger.info(
+                "No notification found for id:%s, doesn't belong to this applicaton", id
+            )
