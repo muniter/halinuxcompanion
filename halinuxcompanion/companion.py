@@ -1,3 +1,4 @@
+import os
 import json
 import platform
 import uuid
@@ -100,14 +101,23 @@ class Companion:
         self.ha_url = config.ha_url.rstrip("/")
         self.ha_token = config.ha_token
         self.device_id = config.device_id
-        self.device_name = config.device_name if config.device_name else self.device_name
-        self.manufacturer = config.manufacturer if config.manufacturer else self.manufacturer
+        self.device_name = (
+            config.device_name if config.device_name else self.device_name
+        )
+        self.manufacturer = (
+            config.manufacturer if config.manufacturer else self.manufacturer
+        )
         self.model = config.model if config.model else self.model
         self.computer_ip = config.computer_ip
         self.computer_port = config.computer_port
-        self.refresh_interval = config.refresh_interval if config.refresh_interval else self.refresh_interval
+        self.refresh_interval = (
+            config.refresh_interval
+            if config.refresh_interval
+            else self.refresh_interval
+        )
 
         from halinuxcompanion.sensors import __all__ as all_sensors
+
         for name, sensor in config.sensors.items():
             if name not in all_sensors:
                 logger.error("Sensor %s doesn't exist", name)
@@ -115,7 +125,11 @@ class Companion:
             else:
                 self.sensors[name] = sensor.enabled
 
-        if config.services and config.services.notifications and config.services.notifications.enabled:
+        if (
+            config.services
+            and config.services.notifications
+            and config.services.notifications.enabled
+        ):
             self.notifier = True
             self.app_data = {
                 "push_token": str(uuid.uuid1()),  # TODO: Random generation
@@ -150,8 +164,9 @@ class Companion:
         res = await api.post("/api/mobile_app/registrations", data=register_data)
 
         if res.ok:
-            logger.info("Device Registration successful")
             data = await res.json()
+            logger.info("Device Registration successful: %s", data)
+            self.save_registration_data(data)
             return True, data
         else:
             text = await res.text()
@@ -161,3 +176,37 @@ class Companion:
                 text,
             )
             return False, {}
+
+    async def load_or_register(self, api: "API") -> Tuple[bool, dict]:
+        """
+        Load registration data from disk or register the companion APP
+        """
+        registration_data = self.load_registration_data()
+        if registration_data:
+            logger.info("Loaded existing registration data from disk %s", registration_data)
+            return True, registration_data
+        return await self.register(api)
+
+    def save_registration_data(self, data: dict):
+        # store data in $XDG_STATE_HOME/halinuxcompanion/registration.json
+        state_home = os.getenv("XDG_STATE_HOME", os.path.expanduser("~/.local/state"))
+        if not os.path.exists(state_home):
+            os.makedirs(state_home)
+
+        app_state_dir = os.path.join(state_home, "halinuxcompanion")
+        if not os.path.exists(app_state_dir):
+            os.makedirs(app_state_dir)
+
+        registration_path = os.path.join(app_state_dir, "registration.json")
+
+        with open(registration_path, "w") as f:
+            f.write(json.dumps(data))
+
+    def load_registration_data(self) -> Optional[dict]:
+        state_home = os.getenv("XDG_STATE_HOME", os.path.expanduser("~/.local/state"))
+        registration_path = os.path.join(state_home, "halinuxcompanion", "registration.json")
+
+        if os.path.exists(registration_path):
+            with open(registration_path, "r") as f:
+                return json.load(f)
+        return None
