@@ -132,9 +132,14 @@ class Companion:
             and config.services.notifications
             and config.services.notifications.enabled
         ):
+            # Let's generate the push token derived from the device_id
+            import hashlib
+            push_token = f"push_token_{self.device_id}_halinuxcompanion"
+            push_token = hashlib.sha256(push_token.encode()).hexdigest()
+
             self.notifier = True
             self.app_data = {
-                "push_token": str(uuid.uuid1()),  # TODO: Random generation
+                "push_token": push_token,  # TODO: Random generation, and store it in state
                 "push_url": f"http://{self.computer_ip}:{self.computer_port}/notify",
             }
             self.url_program = config.services.notifications.url_program
