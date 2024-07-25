@@ -6,6 +6,8 @@ import logging
 from pydantic import BaseModel
 from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
+SC_INTEGRATION_DELETED = 410
+
 if TYPE_CHECKING:
     from halinuxcompanion.api import API
 
@@ -153,6 +155,22 @@ class Companion:
             "app_data": self.app_data,
         }
 
+    async def check_registration(self, api: "API", data: dict) -> bool:
+        """
+        Check if the current registration is still valid
+        """
+        logger.info("Checking if device is already registered")
+        api.process_registration_data(data)
+        res = await api.webhook_post("get_config", data=json.dumps({"type": "get_config"}))
+        if res.status == 200:
+            return True
+        elif res.status == SC_INTEGRATION_DELETED:
+            logger.info("Device registration has been deleted, need to register again")
+            return False
+        else:
+            logger.error("Device registration failed with status code %s", res.status)
+            raise Exception("Device registration failed " + str(res.status))
+
     async def register(self, api: "API") -> Tuple[bool, dict]:
         """Register the companion with Home Assisntat
         If the registration fails it's a critical error and the program should exit.
@@ -184,7 +202,11 @@ class Companion:
         registration_data = self.load_registration_data()
         if registration_data:
             logger.info("Loaded existing registration data from disk %s", registration_data)
-            return True, registration_data
+            if await self.check_registration(api, registration_data):
+                logger.info("Device already registered")
+                return True, registration_data
+            else:
+                logger.info("Device registration data is invalid, re-registering")
         return await self.register(api)
 
     def save_registration_data(self, data: dict):

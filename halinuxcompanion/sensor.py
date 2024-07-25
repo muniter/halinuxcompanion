@@ -15,6 +15,7 @@ SC_REGISTER_SENSOR = 301
 
 class Sensor:
     """Standard sensor class"""
+
     instances = []
 
     def __init__(self):
@@ -87,6 +88,7 @@ class Sensor:
 
 class SensorManager:
     """Manages sensors registration, and updates to Home Assistant"""
+
     api: API
     update_counter: int = 0
     sensors: List[Sensor] = []
@@ -126,7 +128,7 @@ class SensorManager:
             logger.info("Sensor registration successful: %s", sname)
             return True
         else:
-            logger.error('Sensor registration failed with status code:%s sensor:%s', res.status, sid)
+            logger.error('Sensor registration failed with status code:%s sensor:%s', res.status, sensor.unique_id)
             return False
 
     async def update_sensors(self, sensors: List[Sensor] = []) -> bool:
@@ -138,23 +140,39 @@ class SensorManager:
         """
         sensors = sensors or self.sensors
         self.update_counter += 1
-        data = {"type": "update_sensor_states", "data": [sensor.update() for sensor in sensors]}
+        data = {
+            "type": "update_sensor_states",
+            "data": [sensor.update() for sensor in sensors],
+        }
         snames = [sensor.config_name for sensor in sensors]
-        logger.info('Sensors update %s with sensors: %s', self.update_counter, snames)
-        logger.debug('Sensors update %s with sensors: %s payload: %s', self.update_counter, snames, data)
+        logger.info("Sensors update %s with sensors: %s", self.update_counter, snames)
+        logger.debug(
+            "Sensors update %s with sensors: %s payload: %s",
+            self.update_counter,
+            snames,
+            data,
+        )
         try:
-            res = await self.api.webhook_post('update_sensors', data=json.dumps(data))
+            res = await self.api.webhook_post("update_sensors", data=json.dumps(data))
             if res.ok or res.status == SC_REGISTER_SENSOR:
-                logger.info('Sensors update %s successful', self.update_counter)
+                logger.info("Sensors update %s successful", self.update_counter)
                 return True
             else:
-                logger.error('Sensors update %s failed with status code:%s', self.update_counter, res.status)
+                logger.error(
+                    "Sensors update %s failed with status code:%s",
+                    self.update_counter,
+                    res.status,
+                )
         except ClientError as e:
-            logger.error('Sensors update %s failed with error:%s', self.update_counter, e)
+            logger.error(
+                "Sensors update %s failed with error:%s", self.update_counter, e
+            )
 
         return False
 
-    async def _signal_handler(self, signal_alias: str, signal_handler: Callable, sensor: Sensor, *args) -> None:
+    async def _signal_handler(
+        self, signal_alias: str, signal_handler: Callable, sensor: Sensor, *args
+    ) -> None:
         """Signal handler for the sensor manager
         Each sensor can have multiple signals, at the moment defined in halinuxcompanion.dbus, the callback provided for
         the signal is this function wrapped in a functools.partial this allows for the SensorManager to be in charge of
@@ -165,7 +183,7 @@ class SensorManager:
         :param signal_handler: The signal handler (defined by the sensor in sensor.signals)
         :param args: The arguments to pass to the signal handler (coming from the dbus signal)
         """
-        logger.info('Signal %s received for sensor:%s', signal_alias, sensor.unique_id)
+        logger.info("Signal %s received for sensor:%s", signal_alias, sensor.unique_id)
         await signal_handler(sensor, *args)
         await self.update_sensors([sensor])
 
