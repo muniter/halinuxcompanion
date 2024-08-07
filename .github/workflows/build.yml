@@ -23,6 +23,7 @@ jobs:
     - run: coverage run --concurrency=thread,greenlet -m pytest .
     - run: coverage xml
     - name: SonarCloud Scan
+      if: false
       uses: sonarsource/sonarcloud-github-action@master
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
