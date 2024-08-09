@@ -2,7 +2,7 @@ from halinuxcompanion.api import Server
 from halinuxcompanion.notifier import Notifier
 from halinuxcompanion.sensors.status import Status
 import json
-from halinuxcompanion.companion import Companion
+from halinuxcompanion.companion import CommandConfig, Companion
 import pytest
 
 
@@ -40,7 +40,7 @@ async def test_notifier():
     notifier = setup_notifier()
     notifier.push_token = "d0f7bd90-7b23-11ee-852f-0 0d861ab3a9c"
     notifier.commands = {
-        "command_suspend": {"name": "Suspend", "command": ["ls"]},
+        "command_suspend": CommandConfig(name="Suspend", command=["ls"]),
     }
 
     # Existing command
