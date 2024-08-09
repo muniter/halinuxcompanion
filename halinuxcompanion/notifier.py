@@ -7,7 +7,7 @@ from aiohttp.web import Response, json_response
 from aiohttp import ClientError
 from dbus_next.aio import ProxyInterface
 from dbus_next.signature import Variant
-from importlib.resources import path as resource_path
+from importlib.resources import files
 from collections import OrderedDict
 from typing import Dict, List
 import json
@@ -18,8 +18,7 @@ logger = logging.getLogger(__name__)
 
 APP_NAME = "halinuxcompanion"
 HA = "Home Assistant"
-with resource_path(f"{APP_NAME}.resources", "home-assistant-favicon.png") as p:
-    HA_ICON = str(p.absolute())
+HA_ICON = files("halinuxcompanion.resources").joinpath("home-assistant-favicon.png")
 
 # Urgency levels
 # https://people.gnome.org/~mccann/docs/notification-spec/notification-spec-latest.html#urgency-levels
