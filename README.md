@@ -1,22 +1,30 @@
 # Home Assistant Linux Companion
 
-Application to run on Linux desktop computer to provide sensors data to Home Assistant, and get notifications as if it was a mobile device.
+Application to run on Linux desktop computer to provide sensor data to Home Assistant, and get notifications as if it was a mobile device.
 
 ## How To
 
 ### Requirements
 
-1. Python 3.10
-2. [requirements.txt](requirements.txt)
+Python 3.10+
 
 ### Instructions
 
 1. [Get a long-lived access token from your Home Assistant user](https://www.atomicha.com/home-assistant-how-to-generate-long-lived-access-token-part-1/)
-1. Install requirements `pip3 install -r requirements.txt`
+1. Clone this repository.
+1. Create a Python virtual environment and install all the requirements:
+
+   ```shell
+   cd halinuxcompanion
+   python3 -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
+   ```
+
 1. Copy `config.example.json` to `config.json`.
 1. Modify `config.json` to match your setup and desired options.
-1. Run the application `python3 -m halinuxcompanion --config config.json`
-    - Alternative set up a systemd service using the [provided unit file](halinuxcompanion/resources/halinuxcompanion.service)
+1. Run the application from the virtual environment: `python -m halinuxcompanion --config config.json`
+    - Alternatively set up a systemd service using the [provided unit file](halinuxcompanion/resources/halinuxcompanion.service)
 
 Now in your Home Assistant you will see a new device in the **"mobile_app"** integration, and there will be a new service to notify your Linux desktop. Notification actions work and the expected events will be fired in Home Assistant.
 
