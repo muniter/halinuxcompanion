@@ -6,7 +6,7 @@ Application to run on Linux desktop computer to provide sensor data to Home Assi
 
 ### Requirements
 
-Python 3.10+
+Python 3.10+ and the related `dev` dependencies (usually `python3-dev` or `python3-devel` on your package manager)
 
 ### Instructions
 
