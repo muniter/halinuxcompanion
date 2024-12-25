@@ -6,7 +6,7 @@ Application to run on Linux desktop computer to provide sensor data to Home Assi
 
 ### Requirements
 
-Python 3.10+
+Python 3.10+ and the related `dev` dependencies (usually `python3-dev` or `python3-devel` on your package manager)
 
 ### Instructions
 
@@ -23,8 +23,14 @@ Python 3.10+
 
 1. Copy `config.example.json` to `config.json`.
 1. Modify `config.json` to match your setup and desired options.
-1. Run the application from the virtual environment: `python -m halinuxcompanion --config config.json`
-    - Alternatively set up a systemd service using the [provided unit file](halinuxcompanion/resources/halinuxcompanion.service)
+1. Run the application, either from:
+   1. the virtual environment directly: `python -m halinuxcompanion --config config.json`. In this case, you'll need to run it again when you restart.
+   1. or setting up a systemd service (you may need `sudo` for most of the commands below):
+      1. Copy the sample unit file from `halinuxcompanion/resources/halinuxcompanion.service` to `/etc/systemd/system`
+      1. Modify it to match your setup - mainly, the installation paths at `WorkingDirectory` and `ExecStart`
+      1. Start it with `systemctl start halinuxcompanion`
+      1. You can check if it went well with `systemctl status halinuxcompanion`. If it errored, you can check logs with `journalctl -u halinuxcompanion`
+      1. If all went well, you can enable it permanently with `systemctl enable halinuxcompanion`
 
 Now in your Home Assistant you will see a new device in the **"mobile_app"** integration, and there will be a new service to notify your Linux desktop. Notification actions work and the expected events will be fired in Home Assistant.
 
