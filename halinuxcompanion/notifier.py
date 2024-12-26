@@ -316,7 +316,7 @@ class Notifier:
         id = await self.interface.call_notify(
             APP_NAME,
             notification["replace_id"],
-            notification["icon"],
+            str(notification["icon"]),
             notification["title"],
             notification["message"],
             notification["actions"],
