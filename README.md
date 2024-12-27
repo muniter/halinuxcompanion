@@ -10,7 +10,7 @@ Python 3.10+ and the related `dev` dependencies (usually `python3-dev` or `pytho
 
 ### Instructions
 
-1. [Get a long-lived access token from your Home Assistant user](https://www.atomicha.com/home-assistant-how-to-generate-long-lived-access-token-part-1/)
+1. [Get a long-lived access token from your Home Assistant user](https://www.home-assistant.io/docs/authentication/#your-account-profile)
 1. Clone this repository.
 1. Create a Python virtual environment and install all the requirements:
 
