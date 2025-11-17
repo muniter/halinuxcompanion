@@ -11,11 +11,11 @@ Python 3.10+ and the related `dev` dependencies (usually `python3-dev` or `pytho
 ### Instructions
 
 1. [Get a long-lived access token from your Home Assistant user](https://www.home-assistant.io/docs/authentication/#your-account-profile)
-1. Clone this repository.
+1. Clone this repository in a subfolder from your home directory (unless you don't want to run the service from `systemd`)
 1. Create a Python virtual environment and install all the requirements:
 
    ```shell
-   cd halinuxcompanion
+   cd halinuxcompanion  # this is the root of the cloned project
    python3 -m venv .venv
    source .venv/bin/activate
    pip install -r requirements.txt
@@ -25,12 +25,13 @@ Python 3.10+ and the related `dev` dependencies (usually `python3-dev` or `pytho
 1. Modify `config.json` to match your setup and desired options.
 1. Run the application, either from:
    1. the virtual environment directly: `python -m halinuxcompanion --config config.json`. In this case, you'll need to run it again when you restart.
-   1. or setting up a systemd service (you may need `sudo` for most of the commands below):
-      1. Copy the sample unit file from `halinuxcompanion/resources/halinuxcompanion.service` to `/etc/systemd/system`
+   1. or setting up a systemd service (don't use `sudo` for any of the commands below; if you need it, something is probably wrong with your setup):
+      1. Copy the sample unit file from `halinuxcompanion/resources/halinuxcompanion.service` to `~/.config/systemd/user/`
       1. Modify it to match your setup - mainly, the installation paths at `WorkingDirectory` and `ExecStart`
-      1. Start it with `systemctl start halinuxcompanion`
-      1. You can check if it went well with `systemctl status halinuxcompanion`. If it errored, you can check logs with `journalctl -u halinuxcompanion`
-      1. If all went well, you can enable it permanently with `systemctl enable halinuxcompanion`
+      1. (Re)Load it with `systemctl --user daemon-reload`
+      1. Start it with `systemctl --user start halinuxcompanion`
+      1. You can check if it went well with `systemctl --user status halinuxcompanion`. If it errored, you can check logs with `journalctl --user -u halinuxcompanion`
+      1. If all went well, you can enable it permanently with `systemctl --user enable halinuxcompanion`
 
 Now in your Home Assistant you will see a new device in the **"mobile_app"** integration, and there will be a new service to notify your Linux desktop. Notification actions work and the expected events will be fired in Home Assistant.
 
