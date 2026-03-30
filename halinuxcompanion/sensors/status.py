@@ -1,5 +1,6 @@
 from types import MethodType
 from halinuxcompanion.sensor import Sensor
+from subprocess import run
 import psutil
 import os
 
@@ -49,8 +50,8 @@ async def screensaver_on_active_changed(self, v):
 
 
 def updater(self):
-    # Updated only by signals
-    pass
+    idle_min = float(run(["xprintidle"], capture_output=True, text=True).stdout) / 1000 / 60
+    self.attributes.update(IDLE[idle_min >= 5])
 
 
 Status.updater = MethodType(updater, Status)

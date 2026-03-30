@@ -20,7 +20,7 @@ Python 3.10+ and the related `dev` dependencies (usually `python3-dev` or `pytho
    source .venv/bin/activate
    pip install -r requirements.txt
    ```
-
+1. You will also need to install `xprintidle` for the idle timer to work properly.
 1. Copy `config.example.json` to `config.json`.
 1. Modify `config.json` to match your setup and desired options.
 1. Run the application, either from:
@@ -61,6 +61,10 @@ Now in your Home Assistant you will see a new device in the **"mobile_app"** int
     "uptime": {
       "enabled": true,
       "name": "Uptime"
+    },
+    "idle_time": {
+      "enabled": true,
+      "name": "Idle Time"
     },
     "status": {
       "enabled": true,

@@ -22,6 +22,10 @@
       "enabled": true,
       "name": "Uptime"
     },
+    "idle_time": {
+      "enabled": true,
+      "name": "Idle Time"
+    },
     "status": {
       "enabled": true,
       "name": "Status"
