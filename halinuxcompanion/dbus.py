@@ -104,7 +104,7 @@ class Dbus:
         """Register a signal handler"""
         iface_name, signal_name = SIGNALS[signal_alias]["interface"], SIGNALS[signal_alias]["name"]
         iface = await self.get_interface(iface_name)
-        if iface is not None:
+        if iface is not None and hasattr(iface, signal_name):
             getattr(iface, signal_name)(callback)
             logger.info("Registered signal callback for interface:%s, signal:%s", iface_name, signal_name)
             SIGNALS["subscribed"].append((signal_alias, callback))
