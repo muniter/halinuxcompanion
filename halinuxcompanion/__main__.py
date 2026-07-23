@@ -47,7 +47,7 @@ async def main():
     Sensors:
         - Data is collected from sensors and sent to Home Assistant.
     Notifications:
-        - Sent from Home Assistant to the application via embeded webserver, this are sent to the desktop using Dbus.
+        - Sent from Home Assistant to the application via embeded webserver, these are sent to the desktop using Dbus.
         - Actions are triggered in dbus listened by the application. Some are handled locally others are handled by Home
           Assistant, events are relayed to it as expected (closed and action).
     """
@@ -71,7 +71,7 @@ async def main():
     sensors = list(filter(lambda x: x.config_name in companion.sensors, Sensor.instances))
     sensor_manager = SensorManager(api, sensors, bus)
 
-    # If the device can't be registered exit immidiately, nothing to do.
+    # If the device can't be registered exit immediately, nothing to do.
     ok, reg_data = await companion.load_or_register(api)
     if not ok:
         logger.critical("Device registration failed, exiting now")
